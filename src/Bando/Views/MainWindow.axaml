@@ -1,0 +1,36 @@
+<Window
+    x:Class="Bando.Views.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Bando.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:Bando.ViewModels"
+    Title="Bando"
+    d:DesignHeight="450"
+    d:DesignWidth="800"
+    x:DataType="vm:MainWindowViewModel"
+    Icon="/Assets/avalonia-logo.ico"
+    mc:Ignorable="d">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <Grid VerticalAlignment="Stretch" RowDefinitions="Auto,*,Auto">
+        <Panel Height="50" Background="Crimson">
+            <TextBlock Text="control center" />
+        </Panel>
+        <Panel Grid.Row="1" Background="DeepSkyBlue">
+            <ScrollViewer>
+                <TextBlock Text="Sheet music" />
+            </ScrollViewer>
+        </Panel>
+        <Panel
+            Grid.Row="2"
+            Height="100"
+            Background="AliceBlue">
+            <controls:PianoKeyboard />
+        </Panel>
+    </Grid>
+</Window>

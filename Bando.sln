@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{9D8820F5-2866-44D2-8AC6-D146C1869302}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bando", "src\Bando\Bando.csproj", "{312FBBFD-65BB-4DA8-91B4-F252625DB2BB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{312FBBFD-65BB-4DA8-91B4-F252625DB2BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{312FBBFD-65BB-4DA8-91B4-F252625DB2BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{312FBBFD-65BB-4DA8-91B4-F252625DB2BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{312FBBFD-65BB-4DA8-91B4-F252625DB2BB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{312FBBFD-65BB-4DA8-91B4-F252625DB2BB} = {9D8820F5-2866-44D2-8AC6-D146C1869302}
+	EndGlobalSection
+EndGlobal
