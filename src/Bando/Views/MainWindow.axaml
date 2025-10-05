@@ -28,7 +28,7 @@
         </Panel>
         <Panel
             Grid.Row="2"
-            Height="150"
+            Height="140"
             Background="AliceBlue">
             <controls:PianoKeyboard />
         </Panel>
