@@ -1,0 +1,25 @@
+<Styles
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:control="using:Bando.Controls">
+    <Design.PreviewWith>
+        <Border Padding="20">
+            <!--  Add Controls for Previewer Here  -->
+        </Border>
+    </Design.PreviewWith>
+
+    <Style Selector="control|WhitePianoKey:pointerover Border">
+        <Setter Property="Background" Value="#80A1BA" />
+    </Style>
+    <Style Selector="control|WhitePianoKey Border">
+        <Setter Property="Background" Value="White" />
+    </Style>
+
+
+    <Style Selector="control|BlackPianoKey:pointerover Border">
+        <Setter Property="Background" Value="#334443" />
+    </Style>
+    <Style Selector="control|BlackPianoKey Border">
+        <Setter Property="Background" Value="Black" />
+    </Style>
+</Styles>

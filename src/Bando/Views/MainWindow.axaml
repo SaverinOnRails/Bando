@@ -21,14 +21,14 @@
         <Panel Height="50" Background="Crimson">
             <TextBlock Text="control center" />
         </Panel>
-        <Panel Grid.Row="1" Background="DeepSkyBlue">
+        <Panel Grid.Row="1" Background="Peru">
             <ScrollViewer>
                 <TextBlock Text="Sheet music" />
             </ScrollViewer>
         </Panel>
         <Panel
             Grid.Row="2"
-            Height="100"
+            Height="150"
             Background="AliceBlue">
             <controls:PianoKeyboard />
         </Panel>

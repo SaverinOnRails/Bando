@@ -19,6 +19,7 @@ public class PianoKeyboard : Panel
     }
     private void DrawKeys()
     {
+        Background = Avalonia.Media.Brushes.Black;
         Grid keyboardGrid = new();
         keyboardGrid.Children.Add(_whiteKeyGrid);
         keyboardGrid.Children.Add(_blackKeyCanvas);
@@ -47,6 +48,7 @@ public class PianoKeyboard : Panel
             double offset = 0;
             foreach (var whiteKey in whiteKeys)
             {
+                //render black keys in segments
                 int blackCount = 0;
                 if (whiteKey.MusicKey == MusicKey.C)
                     blackCount = 2;
@@ -58,12 +60,13 @@ public class PianoKeyboard : Panel
                 if (blackCount > 0 && whiteKey.Octave != 8)
                 {
                     double blackWidth = whiteKey.Bounds.Width * 0.6;
+                    double blackHeight = whiteKey.Bounds.Height * 0.65; 
                     double spacing = whiteKey.Bounds.Width * 0.4;
                     double push = whiteKey.Bounds.Width - blackWidth / 2;
 
                     for (int i = 0; i < blackCount; i++)
                     {
-                        var key = new BlackPianoKey { Width = blackWidth };
+                        var key = new BlackPianoKey { Width = blackWidth, Height = blackHeight };
                         Canvas.SetLeft(key, offset + push);
                         _blackKeyCanvas.Children.Add(key);
                         push += blackWidth + spacing;
@@ -95,8 +98,8 @@ public class WhitePianoKey : PianoKey
         var keyBorder = new Border
         {
             BorderBrush = Avalonia.Media.Brushes.Black,
-            BorderThickness = new Thickness(0, 0, 1, 0),
-            Background = Avalonia.Media.Brushes.White,
+            BorderThickness = new(0, 0, 1, 1),
+            CornerRadius = new(0, 0, 8, 8)
         };
         Children.Add(keyBorder);
     }
@@ -106,8 +109,12 @@ public class BlackPianoKey : PianoKey
 {
     protected override void Draw()
     {
-        Height = 50;
-        Background = Avalonia.Media.Brushes.Black;
+        var keyBorder = new Border
+        {
+            BorderThickness = new(1),
+            CornerRadius = new(0, 0, 5, 5),
+        };
+        Children.Add(keyBorder);
     }
 }
 
