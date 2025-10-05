@@ -20,17 +20,18 @@
     <Grid VerticalAlignment="Stretch" RowDefinitions="Auto,*,Auto">
         <Panel Height="50" Background="Crimson">
             <TextBlock Text="control center" />
+            <Button Command="{Binding Start}">Start</Button>
         </Panel>
-        <Panel Grid.Row="1" Background="Peru">
+        <Panel Grid.Row="1" Background="Black">
             <ScrollViewer>
                 <TextBlock Text="Sheet music" />
             </ScrollViewer>
         </Panel>
         <Panel
             Grid.Row="2"
-            Height="140"
+            Height="145"
             Background="AliceBlue">
-            <controls:PianoKeyboard />
+            <controls:PianoKeyboard x:Name="keyboard" />
         </Panel>
     </Grid>
 </Window>

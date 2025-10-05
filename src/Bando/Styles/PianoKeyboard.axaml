@@ -22,4 +22,11 @@
     <Style Selector="control|BlackPianoKey Border">
         <Setter Property="Background" Value="Black" />
     </Style>
+
+    <Style Selector="control|WhitePianoKey:keyOn Border">
+        <Setter Property="Background" Value="Green" />
+    </Style>
+    <Style Selector="control|BlackPianoKey:keyOn Border">
+        <Setter Property="Background" Value="Green" />
+    </Style>
 </Styles>

@@ -1,17 +1,19 @@
 namespace Bando.Controls;
+
+using System;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Melanchall.DryWetMidi.MusicTheory;
 
 public class PianoKeyboard : Panel
 {
     private readonly int _whiteKeyCount = 52;
     private Grid _whiteKeyGrid = new();
     private Canvas _blackKeyCanvas = new() { Height = 50, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top, };
-    private static readonly MusicKey[] WhiteKeyPattern =
-    {
-        MusicKey.A, MusicKey.B, MusicKey.C, MusicKey.D, MusicKey.E, MusicKey.F, MusicKey.G
-    };
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -24,12 +26,13 @@ public class PianoKeyboard : Panel
         keyboardGrid.Children.Add(_whiteKeyGrid);
         keyboardGrid.Children.Add(_blackKeyCanvas);
         _whiteKeyGrid.ColumnDefinitions = new(string.Concat(Enumerable.Repeat("*,", _whiteKeyCount)).TrimEnd(','));
+        NoteName[] whiteKeyProgression = { NoteName.A, NoteName.B, NoteName.C, NoteName.D, NoteName.E, NoteName.F, NoteName.G };
         for (int i = 0; i < _whiteKeyCount; i++)
         {
             var whiteKey = new WhitePianoKey()
             {
-                MusicKey = WhiteKeyPattern[i % WhiteKeyPattern.Length],
-                Octave = (i / WhiteKeyPattern.Length) + (i % WhiteKeyPattern.Length >= 2 ? 1 : 0)
+                NoteName = whiteKeyProgression[i % whiteKeyProgression.Length],
+                Octave = (i / whiteKeyProgression.Length) + (i % whiteKeyProgression.Length >= 2 ? 1 : 0)
             };
             Grid.SetColumn(whiteKey, i);
             _whiteKeyGrid.Children.Add(whiteKey);
@@ -46,42 +49,71 @@ public class PianoKeyboard : Panel
             _blackKeyCanvas.Children.Clear();
             var whiteKeys = _whiteKeyGrid.Children.OfType<WhitePianoKey>().ToList();
             double offset = 0;
+            NoteName[] twoBlacksProgression = new[] { NoteName.CSharp, NoteName.DSharp };
+            NoteName[] threeBlacksProgression = new[] { NoteName.FSharp, NoteName.GSharp, NoteName.ASharp };
+            int octave = 0;
             foreach (var whiteKey in whiteKeys)
             {
                 //render black keys in segments
                 int blackCount = 0;
-                if (whiteKey.MusicKey == MusicKey.C)
+                if (whiteKey.NoteName == NoteName.C)
                     blackCount = 2;
-                else if (whiteKey.MusicKey == MusicKey.F)
+                else if (whiteKey.NoteName == NoteName.F)
                     blackCount = 3;
-                else if (whiteKey.MusicKey == MusicKey.A && whiteKey.Octave == 0)
+                else if (whiteKey.NoteName == NoteName.A && whiteKey.Octave == 0)
                     blackCount = 1;
 
                 if (blackCount > 0 && whiteKey.Octave != 8)
                 {
                     double blackWidth = whiteKey.Bounds.Width * 0.6;
-                    double blackHeight = whiteKey.Bounds.Height * 0.65; 
+                    double blackHeight = whiteKey.Bounds.Height * 0.65;
                     double spacing = whiteKey.Bounds.Width * 0.4;
                     double push = whiteKey.Bounds.Width - blackWidth / 2;
-
                     for (int i = 0; i < blackCount; i++)
                     {
-                        var key = new BlackPianoKey { Width = blackWidth, Height = blackHeight };
+                        var mkey = (blackCount == 2) ? twoBlacksProgression[i] :
+                            (blackCount == 3) ? threeBlacksProgression[i] : NoteName.ASharp;
+                        var key = new BlackPianoKey { Width = blackWidth, Height = blackHeight, NoteName = mkey, Octave = octave };
                         Canvas.SetLeft(key, offset + push);
                         _blackKeyCanvas.Children.Add(key);
                         push += blackWidth + spacing;
+                        if (mkey == NoteName.ASharp) octave++;
                     }
                 }
                 offset += whiteKey.Bounds.Width;
             }
         }
     }
+
+    public void IlluminateKey(Bando.Core.Midi.Note note, bool on)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_blackKeyCanvas is null || _whiteKeyGrid is null)
+                return;
+            bool isBlackKey = note.NoteName is NoteName.CSharp or NoteName.DSharp or NoteName.FSharp or NoteName.GSharp or NoteName.ASharp;
+            var source = isBlackKey ? _blackKeyCanvas.Children : _whiteKeyGrid.Children;
+            var key = source
+                .OfType<PianoKey>()
+                .FirstOrDefault(p => p.NoteName == note.NoteName && p.Octave == note.Octave);
+
+            Console.WriteLine(key);
+            if (key is null)
+            {
+                Console.WriteLine($"No key found for {note.NoteName}{note.Octave}");
+                return;
+            }
+
+            key.SetPseudoClasses(on);
+        });
+    }
 }
 
 
+[PseudoClasses(":keyOn")]
 public abstract class PianoKey : Panel
 {
-    public MusicKey MusicKey { get; set; }
+    public NoteName NoteName { get; set; }
     public int Octave { get; set; }
     protected override void OnInitialized()
     {
@@ -89,6 +121,10 @@ public abstract class PianoKey : Panel
         Draw();
     }
     protected abstract void Draw();
+    public void SetPseudoClasses(bool keyOn)
+    {
+        PseudoClasses.Set(":keyOn", keyOn);
+    }
 }
 
 public class WhitePianoKey : PianoKey
@@ -118,7 +154,3 @@ public class BlackPianoKey : PianoKey
     }
 }
 
-public enum MusicKey
-{
-    A, B, C, D, E, F, G
-}

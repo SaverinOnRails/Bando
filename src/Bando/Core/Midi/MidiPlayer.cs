@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
+using Melanchall.DryWetMidi.MusicTheory;
 
 public class MidiPlayer : IDisposable
 {
@@ -13,19 +14,32 @@ public class MidiPlayer : IDisposable
     private List<TimedEvent>? _timedEvents = null;
     private FluidSynth _synth = new();
     private Task? _playbackTask = null;
+    private bool _disposed = false;
+    public delegate void MidiKeyEventHandler(object sender, Note e);
+    public event MidiKeyEventHandler? MidiKeyOn;
+    public event MidiKeyEventHandler? MidiKeyOff;
 
     public void Dispose()
     {
-        throw new NotImplementedException();
+        Dispose(true);
     }
-
+    protected virtual void Dispose(bool dispose)
+    {
+        if (!_disposed)
+        {
+            _synth.Dispose();
+            _disposed = true;
+        }
+    }
     public void LoadMidiFile(string file)
     {
         _midiFile = MidiFile.Read(file);
         _timedEvents = _midiFile.GetTimedEvents().ToList();
+    }
+    public void StartPlayback()
+    {
         _playbackTask = Task.Run(() => PlaybackTask());
     }
-
     private async Task PlaybackTask()
     {
         if (_timedEvents is null || _midiFile is null) return;
@@ -49,41 +63,49 @@ public class MidiPlayer : IDisposable
             case NoteOnEvent noteOn:
                 if (noteOn.Velocity > 0)
                 {
+                    // Console.WriteLine($"note on in {noteOn.GetNoteName()} on octave {noteOn.GetNoteOctave()}");
                     _synth.NoteOn(noteOn.Channel, noteOn.NoteNumber, noteOn.Velocity);
-                    Console.WriteLine($"Note On: {noteOn.NoteNumber}, Velocity: {noteOn.Velocity}, Channel: {noteOn.Channel}");
+                    MidiKeyOn?.Invoke(this, new() { Octave = noteOn.GetNoteOctave(), NoteName = noteOn.GetNoteName() });
                 }
                 else
                 {
                     _synth.NoteOff(noteOn.Channel, noteOn.NoteNumber);
-                    Console.WriteLine($"Note Off: {noteOn.NoteNumber}, Channel: {noteOn.Channel}");
+                    // Console.WriteLine($"note of in {noteOn.GetNoteName()} on octave {noteOn.GetNoteOctave()}");
+                    MidiKeyOff?.Invoke(this, new() { Octave = noteOn.GetNoteOctave(), NoteName = noteOn.GetNoteName() });
                 }
                 break;
 
             case NoteOffEvent noteOff:
                 _synth.NoteOff(noteOff.Channel, noteOff.NoteNumber);
-                Console.WriteLine($"Note Off: {noteOff.NoteNumber}, Channel: {noteOff.Channel}");
+                // Console.WriteLine($"note of in {noteOff.GetNoteName()} on octave {noteOff.GetNoteOctave()}");
+                MidiKeyOff?.Invoke(this, new() { Octave = noteOff.GetNoteOctave(), NoteName = noteOff.GetNoteName() });
                 break;
 
             case ControlChangeEvent controlChange:
                 _synth.ControlChange(controlChange.Channel, controlChange.ControlNumber, controlChange.ControlValue);
-                Console.WriteLine($"Control Change: Controller {controlChange.ControlNumber}, Value: {controlChange.ControlValue}, Channel: {controlChange.Channel}");
                 break;
 
             case ProgramChangeEvent programChange:
                 _synth.ProgramChange(programChange.Channel, programChange.ProgramNumber);
-                Console.WriteLine($"Program Change: {programChange.ProgramNumber} on Channel {programChange.Channel}");
                 break;
 
             case PitchBendEvent pitchBend:
                 _synth.PitchBend(pitchBend.Channel, pitchBend.PitchValue);
-                Console.WriteLine($"Pitch Bend: {pitchBend.PitchValue} on Channel {pitchBend.Channel}");
                 break;
 
             case ChannelAftertouchEvent aftertouch:
                 _synth.ControlChange(aftertouch.Channel, 128, aftertouch.AftertouchValue); // Channel pressure
-                Console.WriteLine($"Channel Aftertouch: {aftertouch.AftertouchValue} on Channel {aftertouch.Channel}");
                 break;
         }
     }
+
 }
 
+
+
+public record Note
+{
+    public int Octave { get; set; }
+    public NoteName NoteName { get; set; }
+
+}
