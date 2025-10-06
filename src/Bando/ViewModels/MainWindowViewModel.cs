@@ -1,20 +1,32 @@
 ﻿using System;
-using Avalonia.Threading;
+using Avalonia.Interactivity;
 using Bando.Controls;
 using Bando.Core.Midi;
 namespace Bando.ViewModels;
-
-
 public partial class MainWindowViewModel : ViewModelBase
 {
     private MidiPlayer _midiPlayer = new();
-    public PianoKeyboard? Keyboard { get; set; } = null;  //TEMPORARY HACK
+    private PianoKeyboard? _keyboard = null;
 
+    public PianoKeyboard? Keyboard
+    {
+        get => _keyboard;
+        set
+        {
+            _keyboard = value;
+            value!.KeyPressed += KeypressedOnKeyboard;
+        }
+    }
     public MainWindowViewModel()
     {
-        _midiPlayer.LoadMidiFile("/home/noble/Midis/Experience_-_Ludovico_Einaudi.mid");
+        _midiPlayer.LoadMidiFile("/home/noble/Midis/Game_of_Thrones_Main_Theme.mid");
         _midiPlayer.MidiKeyOn += MidiKeyOn;
         _midiPlayer.MidiKeyOff += MidiKeyOff;
+    }
+
+    private void KeypressedOnKeyboard(object? sender, KeyPressedEventArgs e)
+    {
+        _midiPlayer.SynthPlayNote(e.Note);
     }
 
     private void MidiKeyOff(object sender, Note e)

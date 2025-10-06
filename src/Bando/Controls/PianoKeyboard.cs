@@ -5,15 +5,18 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Melanchall.DryWetMidi.MusicTheory;
-
+using Note = Bando.Core.Midi.Note;
 public class PianoKeyboard : Panel
 {
     private readonly int _whiteKeyCount = 52;
     private Grid _whiteKeyGrid = new();
     private Canvas _blackKeyCanvas = new() { Height = 50, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top, };
+    internal bool MouseDown = false;
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -96,19 +99,33 @@ public class PianoKeyboard : Panel
             var key = source
                 .OfType<PianoKey>()
                 .FirstOrDefault(p => p.NoteName == note.NoteName && p.Octave == note.Octave);
-
-            Console.WriteLine(key);
             if (key is null)
             {
                 Console.WriteLine($"No key found for {note.NoteName}{note.Octave}");
                 return;
             }
-
             key.SetPseudoClasses(on);
         });
     }
-}
 
+    public static readonly RoutedEvent<KeyPressedEventArgs> KeyPressedEvent =
+        RoutedEvent.Register<PianoKeyboard, KeyPressedEventArgs>(nameof(KeyPressed), RoutingStrategies.Bubble);
+
+    public event EventHandler<KeyPressedEventArgs> KeyPressed
+    {
+        add => AddHandler(KeyPressedEvent, value);
+        remove => RemoveHandler(KeyPressedEvent, value);
+    }
+
+}
+public class KeyPressedEventArgs : RoutedEventArgs
+{
+    public Note Note { get; set; }
+    public KeyPressedEventArgs(RoutedEvent routedEvent, Note note) : base(routedEvent)
+    {
+        Note = note;
+    }
+}
 
 [PseudoClasses(":keyOn")]
 public abstract class PianoKey : Panel
@@ -125,6 +142,43 @@ public abstract class PianoKey : Panel
     {
         PseudoClasses.Set(":keyOn", keyOn);
     }
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        var keyboard = this.FindAncestorOfType<PianoKeyboard>();
+        if (keyboard is null) return;
+        keyboard.MouseDown = true;
+        keyboard.RaiseEvent(new KeyPressedEventArgs(PianoKeyboard.KeyPressedEvent, GetNote()));
+        PseudoClasses.Set(":pressed", true);
+        e.Pointer.Capture(null); //allow other events
+    }
+    protected override void OnPointerExited(PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        PseudoClasses.Set(":pressed", false);
+    }
+
+    protected override void OnPointerReleased(PointerReleasedEventArgs e)
+    {
+        base.OnPointerReleased(e);
+        var keyboard = this.FindAncestorOfType<PianoKeyboard>();
+        if (keyboard is null) return;
+        keyboard.MouseDown = false;
+        PseudoClasses.Set(":pressed", false);
+    }
+
+    protected override void OnPointerEntered(PointerEventArgs e)
+    {
+        var keyboard = this.FindAncestorOfType<PianoKeyboard>();
+        if (keyboard is null) return;
+        if (keyboard.MouseDown)
+        {
+            keyboard.RaiseEvent(new KeyPressedEventArgs(PianoKeyboard.KeyPressedEvent, GetNote()));
+            PseudoClasses.Set(":pressed", true);
+        }
+        base.OnPointerEntered(e);
+    }
+    public Bando.Core.Midi.Note GetNote() => new() { Octave = Octave, NoteName = NoteName };
 }
 
 public class WhitePianoKey : PianoKey

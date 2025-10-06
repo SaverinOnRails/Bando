@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.MusicTheory;
@@ -99,6 +100,12 @@ public class MidiPlayer : IDisposable
         }
     }
 
+    public void SynthPlayNote(Note note)
+    {
+        var notenumber = Melanchall.DryWetMidi.MusicTheory.Note.Get(note.NoteName, note.Octave).NoteNumber;
+        FourBitNumber channel = (FourBitNumber)0;
+        _synth.NoteOn(channel, notenumber, 100);
+    }
 }
 
 

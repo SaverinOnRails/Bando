@@ -8,25 +8,99 @@
         </Border>
     </Design.PreviewWith>
 
-    <Style Selector="control|WhitePianoKey:pointerover Border">
-        <Setter Property="Background" Value="#80A1BA" />
-    </Style>
+    <Styles.Resources>
+        <Color x:Key="WhiteKeyColor">#FFFFFF</Color>
+        <Color x:Key="WhiteKeyBorderColor">#E0E0E0</Color>
+        <Color x:Key="WhiteKeyHoverColor">#F0F4F8</Color>
+        <Color x:Key="WhiteKeyHoverBorderColor">#B0B0B0</Color>
+        <Color x:Key="BlackKeyTopColor">#2C2C2C</Color>
+        <Color x:Key="BlackKeyBottomColor">#0A0A0A</Color>
+        <Color x:Key="BlackKeyHoverTopColor">#404040</Color>
+        <Color x:Key="BlackKeyHoverBottomColor">#1A1A1A</Color>
+        <Color x:Key="BlackKeyBorderColor">Black</Color>
+        <Color x:Key="KeyUpColor">#6F00FF</Color>
+        <Color x:Key="KeyActiveBorderColor">#15803D</Color>
+        <Color x:Key="KeyPressedColor">#DC143C</Color>
+    </Styles.Resources>
     <Style Selector="control|WhitePianoKey Border">
-        <Setter Property="Background" Value="White" />
+        <Setter Property="Background" Value="{DynamicResource WhiteKeyColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WhiteKeyBorderColor}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
     </Style>
-
-
-    <Style Selector="control|BlackPianoKey:pointerover Border">
-        <Setter Property="Background" Value="#334443" />
+    <Style Selector="control|WhitePianoKey:pointerover Border">
+        <Setter Property="Background" Value="{DynamicResource WhiteKeyHoverColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WhiteKeyHoverBorderColor}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0" />
+            </Transitions>
+        </Setter>
     </Style>
-    <Style Selector="control|BlackPianoKey Border">
-        <Setter Property="Background" Value="Black" />
-    </Style>
-
     <Style Selector="control|WhitePianoKey:keyOn Border">
-        <Setter Property="Background" Value="Green" />
+        <Setter Property="Background" Value="{DynamicResource KeyUpColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource KeyActiveBorderColor}" />
+    </Style>
+
+    <Style Selector="control|WhitePianoKey:pressed Border">
+        <Setter Property="Background" Value="{DynamicResource KeyPressedColor}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+
+
+    <!--  Blacks  -->
+    <Style Selector="control|BlackPianoKey Border">
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                    <GradientStop Offset="0" Color="{DynamicResource BlackKeyTopColor}" />
+                    <GradientStop Offset="1" Color="{DynamicResource BlackKeyBottomColor}" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="BorderBrush" Value="{DynamicResource BlackKeyBorderColor}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="control|BlackPianoKey:pointerover Border">
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                    <GradientStop Offset="0" Color="{DynamicResource BlackKeyHoverTopColor}" />
+                    <GradientStop Offset="1" Color="{DynamicResource BlackKeyHoverBottomColor}" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="control|BlackPianoKey:pressed Border">
+        <Setter Property="Background" Value="{DynamicResource KeyPressedColor}" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0" />
+            </Transitions>
+        </Setter>
     </Style>
     <Style Selector="control|BlackPianoKey:keyOn Border">
-        <Setter Property="Background" Value="Green" />
+        <Setter Property="Background" Value="{DynamicResource KeyUpColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource KeyActiveBorderColor}" />
     </Style>
 </Styles>
+
