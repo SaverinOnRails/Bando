@@ -1,6 +1,4 @@
-﻿using System;
-using Avalonia.Interactivity;
-using Bando.Controls;
+﻿using Bando.Controls;
 using Bando.Core.Midi;
 namespace Bando.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
@@ -19,7 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     public MainWindowViewModel()
     {
-        _midiPlayer.LoadMidiFile("/home/noble/Midis/Game_of_Thrones_Main_Theme.mid");
+        _midiPlayer.LoadMidiFile("/home/noble/Midis/Sting - Shape Of My Heart.mid");
         _midiPlayer.MidiKeyOn += MidiKeyOn;
         _midiPlayer.MidiKeyOff += MidiKeyOff;
     }

@@ -18,14 +18,21 @@
     </Design.DataContext>
 
     <Grid VerticalAlignment="Stretch" RowDefinitions="Auto,*,Auto">
-        <Panel Height="50" Background="Crimson">
+        <StackPanel
+            Height="50"
+            Background="Crimson"
+            Orientation="Horizontal">
             <TextBlock Text="control center" />
             <Button Command="{Binding Start}">Start</Button>
-        </Panel>
+            <Button>Pause</Button>
+            <Button>Play</Button>
+        </StackPanel>
         <Panel Grid.Row="1" Background="Black">
-            <ScrollViewer>
-                <TextBlock Text="Sheet music" />
-            </ScrollViewer>
+            <Slider
+                Margin="10,0,10,0"
+                Height="100"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top" />
         </Panel>
         <Panel
             Grid.Row="2"

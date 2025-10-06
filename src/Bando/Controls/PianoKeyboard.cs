@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Melanchall.DryWetMidi.MusicTheory;
@@ -202,7 +203,14 @@ public class BlackPianoKey : PianoKey
         var keyBorder = new Border
         {
             BorderThickness = new(1),
-            CornerRadius = new(0, 0, 5, 5),
+            CornerRadius = new(0, 0, 2, 2),
+            BoxShadow = new(new()
+            {
+                Color = Color.Parse("#80000000"), 
+                Blur = 2,
+                OffsetX = 0,
+                OffsetY = 0,
+            }),
         };
         Children.Add(keyBorder);
     }

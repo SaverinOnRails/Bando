@@ -3,6 +3,7 @@ namespace Bando.Core.Midi;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Melanchall.DryWetMidi.Common;
 using Melanchall.DryWetMidi.Core;
@@ -19,6 +20,7 @@ public class MidiPlayer : IDisposable
     public delegate void MidiKeyEventHandler(object sender, Note e);
     public event MidiKeyEventHandler? MidiKeyOn;
     public event MidiKeyEventHandler? MidiKeyOff;
+    private AutoResetEvent _pauseEvent = new(false);
 
     public void Dispose()
     {
@@ -64,24 +66,19 @@ public class MidiPlayer : IDisposable
             case NoteOnEvent noteOn:
                 if (noteOn.Velocity > 0)
                 {
-                    // Console.WriteLine($"note on in {noteOn.GetNoteName()} on octave {noteOn.GetNoteOctave()}");
                     _synth.NoteOn(noteOn.Channel, noteOn.NoteNumber, noteOn.Velocity);
                     MidiKeyOn?.Invoke(this, new() { Octave = noteOn.GetNoteOctave(), NoteName = noteOn.GetNoteName() });
                 }
                 else
                 {
                     _synth.NoteOff(noteOn.Channel, noteOn.NoteNumber);
-                    // Console.WriteLine($"note of in {noteOn.GetNoteName()} on octave {noteOn.GetNoteOctave()}");
                     MidiKeyOff?.Invoke(this, new() { Octave = noteOn.GetNoteOctave(), NoteName = noteOn.GetNoteName() });
                 }
                 break;
-
             case NoteOffEvent noteOff:
                 _synth.NoteOff(noteOff.Channel, noteOff.NoteNumber);
-                // Console.WriteLine($"note of in {noteOff.GetNoteName()} on octave {noteOff.GetNoteOctave()}");
                 MidiKeyOff?.Invoke(this, new() { Octave = noteOff.GetNoteOctave(), NoteName = noteOff.GetNoteName() });
                 break;
-
             case ControlChangeEvent controlChange:
                 _synth.ControlChange(controlChange.Channel, controlChange.ControlNumber, controlChange.ControlValue);
                 break;
@@ -106,9 +103,8 @@ public class MidiPlayer : IDisposable
         FourBitNumber channel = (FourBitNumber)0;
         _synth.NoteOn(channel, notenumber, 100);
     }
+
 }
-
-
 
 public record Note
 {
