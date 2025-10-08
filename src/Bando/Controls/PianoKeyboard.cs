@@ -102,10 +102,18 @@ public class PianoKeyboard : Panel
                 .FirstOrDefault(p => p.NoteName == note.NoteName && p.Octave == note.Octave);
             if (key is null)
             {
-                Console.WriteLine($"No key found for {note.NoteName}{note.Octave}");
                 return;
             }
             key.SetPseudoClasses(on);
+        });
+    }
+
+    public void KeyOffAll()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            _blackKeyCanvas.Children.OfType<BlackPianoKey>().ToList().ForEach(k => k.SetPseudoClasses(false));
+            _whiteKeyGrid.Children.OfType<WhitePianoKey>().ToList().ForEach(k => k.SetPseudoClasses(false));
         });
     }
 
@@ -206,7 +214,7 @@ public class BlackPianoKey : PianoKey
             CornerRadius = new(0, 0, 2, 2),
             BoxShadow = new(new()
             {
-                Color = Color.Parse("#80000000"), 
+                Color = Color.Parse("#80000000"),
                 Blur = 2,
                 OffsetX = 0,
                 OffsetY = 0,
