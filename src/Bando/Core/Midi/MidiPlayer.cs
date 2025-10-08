@@ -2,6 +2,7 @@ namespace Bando.Core.Midi;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,9 @@ using Melanchall.DryWetMidi.Core;
 using Melanchall.DryWetMidi.Interaction;
 using Melanchall.DryWetMidi.MusicTheory;
 
+public delegate void MidiKeyEventHandler(object sender, Note e);
+public delegate void MidiPlaybackLocationChangedHandler(object sender, double newLocation);
+
 public class MidiPlayer : IDisposable
 {
     private MidiFile? _midiFile = null;
@@ -17,10 +21,17 @@ public class MidiPlayer : IDisposable
     private FluidSynth _synth = new();
     private Task? _playbackTask = null;
     private bool _disposed = false;
-    public delegate void MidiKeyEventHandler(object sender, Note e);
     public event MidiKeyEventHandler? MidiKeyOn;
     public event MidiKeyEventHandler? MidiKeyOff;
-    private AutoResetEvent _pauseEvent = new(false);
+    public event MidiPlaybackLocationChangedHandler? MidiPlaybackLocationChanged;
+    public double PlaybackDuration { get; private set; } = 0;
+    public double PlaybackLocation { get; private set; } = 0;
+    private Stopwatch _playbackStopwatch = new();
+    private ManualResetEvent _pauseEvent = new(true);
+
+    public MidiPlayer()
+    {
+    }
 
     public void Dispose()
     {
@@ -38,6 +49,7 @@ public class MidiPlayer : IDisposable
     {
         _midiFile = MidiFile.Read(file);
         _timedEvents = _midiFile.GetTimedEvents().ToList();
+        PlaybackDuration = _midiFile.GetDuration<MetricTimeSpan>().TotalMilliseconds;
     }
     public void StartPlayback()
     {
@@ -47,18 +59,29 @@ public class MidiPlayer : IDisposable
     {
         if (_timedEvents is null || _midiFile is null) return;
         var tempoMap = _midiFile.GetTempoMap();
-        long previousTime = 0;
-        var now = DateTime.Now;
+        _playbackStopwatch.Restart();
         foreach (var timedEvent in _timedEvents)
         {
-            long timeDelta = timedEvent.Time - previousTime;
-            previousTime = timedEvent.Time;
-            var delay = TimeConverter.ConvertTo<MetricTimeSpan>(timeDelta, tempoMap);
-            await Task.Delay(TimeSpan.FromMilliseconds(delay.TotalMilliseconds));
+            var targetTime = TimeConverter.ConvertTo<MetricTimeSpan>(timedEvent.Time, tempoMap);
+            double targetMillisecs = targetTime.TotalMilliseconds;
+            while (true)
+            {
+                _pauseEvent.WaitOne(); 
+                double currentTime = _playbackStopwatch.Elapsed.TotalMilliseconds;
+                double remaining = targetMillisecs - currentTime;
+                if (remaining <= 0)
+                    break;
+                PlaybackLocation = currentTime;
+                MidiPlaybackLocationChanged?.Invoke(this, PlaybackLocation);
+                await Task.Delay(Math.Min((int)remaining, 10));
+            }
+            _pauseEvent.WaitOne(); 
             ProcessMidiEvent(timedEvent.Event);
         }
+        PlaybackLocation = PlaybackDuration;
+        MidiPlaybackLocationChanged?.Invoke(this, PlaybackLocation);
+        Console.WriteLine("event loop is complete");
     }
-
     private void ProcessMidiEvent(MidiEvent midiEvent)
     {
         switch (midiEvent)
@@ -79,21 +102,6 @@ public class MidiPlayer : IDisposable
                 _synth.NoteOff(noteOff.Channel, noteOff.NoteNumber);
                 MidiKeyOff?.Invoke(this, new() { Octave = noteOff.GetNoteOctave(), NoteName = noteOff.GetNoteName() });
                 break;
-            case ControlChangeEvent controlChange:
-                _synth.ControlChange(controlChange.Channel, controlChange.ControlNumber, controlChange.ControlValue);
-                break;
-
-            case ProgramChangeEvent programChange:
-                _synth.ProgramChange(programChange.Channel, programChange.ProgramNumber);
-                break;
-
-            case PitchBendEvent pitchBend:
-                _synth.PitchBend(pitchBend.Channel, pitchBend.PitchValue);
-                break;
-
-            case ChannelAftertouchEvent aftertouch:
-                _synth.ControlChange(aftertouch.Channel, 128, aftertouch.AftertouchValue); // Channel pressure
-                break;
         }
     }
 
@@ -102,6 +110,17 @@ public class MidiPlayer : IDisposable
         var notenumber = Melanchall.DryWetMidi.MusicTheory.Note.Get(note.NoteName, note.Octave).NoteNumber;
         FourBitNumber channel = (FourBitNumber)0;
         _synth.NoteOn(channel, notenumber, 100);
+    }
+
+    public void Pause()
+    {
+        _playbackStopwatch.Stop();
+        _pauseEvent.Reset();
+    }
+    public void Play()
+    {
+        _playbackStopwatch.Start();
+        _pauseEvent.Set();
     }
 
 }

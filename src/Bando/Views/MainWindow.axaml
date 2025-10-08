@@ -24,15 +24,17 @@
             Orientation="Horizontal">
             <TextBlock Text="control center" />
             <Button Command="{Binding Start}">Start</Button>
-            <Button>Pause</Button>
-            <Button>Play</Button>
+            <Button Command="{Binding Pause}">Pause</Button>
+            <Button Command="{Binding Play}">Play</Button>
         </StackPanel>
         <Panel Grid.Row="1" Background="Black">
             <Slider
-                Margin="10,0,10,0"
                 Height="100"
+                Margin="10,0,10,0"
                 HorizontalAlignment="Stretch"
-                VerticalAlignment="Top" />
+                VerticalAlignment="Top"
+                Maximum="{Binding Duration}"
+                Value="{Binding Location}" />
         </Panel>
         <Panel
             Grid.Row="2"

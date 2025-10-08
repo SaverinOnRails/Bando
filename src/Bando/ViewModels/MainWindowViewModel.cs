@@ -1,10 +1,17 @@
 ﻿using Bando.Controls;
 using Bando.Core.Midi;
+using CommunityToolkit.Mvvm.ComponentModel;
 namespace Bando.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private MidiPlayer _midiPlayer = new();
     private PianoKeyboard? _keyboard = null;
+
+    [ObservableProperty]
+    public double duration;
+
+    [ObservableProperty]
+    public double location;
 
     public PianoKeyboard? Keyboard
     {
@@ -17,9 +24,16 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     public MainWindowViewModel()
     {
-        _midiPlayer.LoadMidiFile("/home/noble/Midis/Sting - Shape Of My Heart.mid");
+        _midiPlayer.LoadMidiFile("/home/noble/Downloads/elasticheat.mid");
         _midiPlayer.MidiKeyOn += MidiKeyOn;
         _midiPlayer.MidiKeyOff += MidiKeyOff;
+        _midiPlayer.MidiPlaybackLocationChanged += MidiPlaybackLocationChanged;
+        Duration = _midiPlayer.PlaybackDuration;
+    }
+
+    private void MidiPlaybackLocationChanged(object sender, double newLocation)
+    {
+        Location = newLocation;
     }
 
     private void KeypressedOnKeyboard(object? sender, KeyPressedEventArgs e)
@@ -41,6 +55,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _midiPlayer.StartPlayback();
     }
+    public void Pause() => _midiPlayer.Pause();
+    public void Play() => _midiPlayer.Play();
     public string Greeting { get; } = "Welcome to Avalonia!";
-
 }

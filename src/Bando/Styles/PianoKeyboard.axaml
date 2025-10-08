@@ -28,7 +28,7 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Transitions">
             <Transitions>
-                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="Background" Duration="0:0:0.10" />
             </Transitions>
         </Setter>
     </Style>
@@ -71,7 +71,7 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Transitions">
             <Transitions>
-                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="Background" Duration="0:0:0.10" />
             </Transitions>
         </Setter>
     </Style>
