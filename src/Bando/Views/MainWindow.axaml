@@ -23,9 +23,13 @@
             Background="Crimson"
             Orientation="Horizontal">
             <TextBlock Text="control center" />
+            <Button Command="{Binding SelectFile}">Select File</Button>
             <Button Command="{Binding Start}">Start</Button>
             <Button Command="{Binding Pause}">Pause</Button>
             <Button Command="{Binding Play}">Play</Button>
+            <Button Command="{Binding IncreaseTempo}">Inc</Button>
+            <TextBlock Text="{Binding TempoScale}" />
+            <Button Command="{Binding DecreaseTempo}">Dec</Button>
         </StackPanel>
         <Panel Grid.Row="1" Background="Black">
             <Slider

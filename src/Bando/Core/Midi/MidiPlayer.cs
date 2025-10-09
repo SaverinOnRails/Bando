@@ -23,6 +23,7 @@ public class MidiPlayer : IDisposable
     private bool _disposed = false;
     private CancellationTokenSource _playbackTaskCancellationToken = new();
 
+    public double TempoScale { get; private set; } = 1;
     private bool _paused = false;
     public event MidiKeyEventHandler? MidiKeyOn;
     public event MidiKeyEventHandler? MidiKeyOff;
@@ -47,12 +48,14 @@ public class MidiPlayer : IDisposable
     }
     public void LoadMidiFile(string file)
     {
+        StopPlayback();
         _midiFile = MidiFile.Read(file);
         _timedEvents = _midiFile.GetTimedEvents().ToList();
         PlaybackDuration = _midiFile.GetDuration<MetricTimeSpan>().TotalMilliseconds;
     }
     public void StartPlayback()
     {
+        StopPlayback();
         _playbackTask = Task.Run(() => PlaybackTask(_playbackTaskCancellationToken.Token, 0));
     }
     private async Task PlaybackTask(CancellationToken ctx, double startPos)
@@ -64,7 +67,9 @@ public class MidiPlayer : IDisposable
             _playbackStopwatch.Restart();
             ctx.ThrowIfCancellationRequested();
             int startIndex = GetIndexFromPosition(startPos);
-            for (int index = startIndex; index < _timedEvents.Count(); index++)
+            double virtualTime = 0;
+            long lastStopwatchTicks = _playbackStopwatch.ElapsedTicks;
+            for (int index = startIndex; index < _timedEvents.Count; index++)
             {
                 var timedEvent = _timedEvents[index];
                 var targetTime = TimeConverter.ConvertTo<MetricTimeSpan>(timedEvent.Time, tempoMap);
@@ -73,14 +78,18 @@ public class MidiPlayer : IDisposable
                 while (true)
                 {
                     _pauseEvent.WaitOne();
-                    double currentTime = _playbackStopwatch.Elapsed.TotalMilliseconds;
-                    double remaining = targetMillisecs - currentTime;
+                    var tempoScale = TempoScale;
+                    long currentTicks = _playbackStopwatch.ElapsedTicks;
+                    double deltaMs = (currentTicks - lastStopwatchTicks) * 1000.0 / Stopwatch.Frequency;
+                    virtualTime += deltaMs * tempoScale;
+                    lastStopwatchTicks = currentTicks;
+                    double remaining = targetMillisecs - virtualTime;
                     if (remaining <= 0)
                         break;
-                    PlaybackLocation = currentTime + startPos;
+                    PlaybackLocation = virtualTime + startPos;
                     MidiPlaybackLocationChanged?.Invoke(this, PlaybackLocation);
-                    ctx.ThrowIfCancellationRequested();
-                    await Task.Delay(Math.Min((int)remaining, 10));
+                    int delayMs = (int)Math.Ceiling(Math.Max(1, Math.Min(remaining / tempoScale, 10)));
+                    await Task.Delay(delayMs, ctx);
                 }
                 ctx.ThrowIfCancellationRequested();
                 _pauseEvent.WaitOne();
@@ -89,11 +98,8 @@ public class MidiPlayer : IDisposable
             PlaybackLocation = PlaybackDuration;
             MidiPlaybackLocationChanged?.Invoke(this, PlaybackLocation);
         }
-        catch
-        {
-        }
+        catch { }
     }
-
     private int GetIndexFromPosition(double pos)
     {
         if (_midiFile is null || _timedEvents is null) return 0;
@@ -104,7 +110,6 @@ public class MidiPlayer : IDisposable
             if (eventTime.TotalMilliseconds >= pos)
                 return i;
         }
-
         return _timedEvents.Count;
     }
     private void ProcessMidiEvent(MidiEvent midiEvent)
@@ -127,9 +132,19 @@ public class MidiPlayer : IDisposable
                 _synth.NoteOff(noteOff.Channel, noteOff.NoteNumber);
                 MidiKeyOff?.Invoke(this, new() { Octave = noteOff.GetNoteOctave(), NoteName = noteOff.GetNoteName() });
                 break;
+
+            case ControlChangeEvent controlChange:
+                _synth.ControlChange(controlChange.Channel, controlChange.ControlNumber, controlChange.ControlValue);
+                break;
+            case PitchBendEvent pitchBend:
+                _synth.PitchBend(pitchBend.Channel, pitchBend.PitchValue);
+                break;
+
+            case ProgramChangeEvent programChange:
+                _synth.ProgramChange(programChange.Channel, programChange.ProgramNumber);
+                break;
         }
     }
-
     public void SynthPlayNote(Note note)
     {
         var notenumber = Melanchall.DryWetMidi.MusicTheory.Note.Get(note.NoteName, note.Octave).NoteNumber;
@@ -153,15 +168,8 @@ public class MidiPlayer : IDisposable
     }
     public void SeekTo(double ms)
     {
-        if (_playbackTask is null) return;
-        if (!_playbackTask.IsCompleted)
-        {
-            _playbackTaskCancellationToken.Cancel();
-            _playbackTaskCancellationToken.Dispose();
-        }
+        StopPlayback();
         PlaybackLocation = ms;
-        ResetSynth();
-        _playbackTaskCancellationToken = new();
         _playbackTask = Task.Run(() => PlaybackTask(_playbackTaskCancellationToken.Token, ms));
     }
 
@@ -173,6 +181,21 @@ public class MidiPlayer : IDisposable
         }
         TurnOffAllNotes?.Invoke(this, new());
     }
+
+    private void StopPlayback()
+    {
+        if (_playbackTask is null) return;
+        if (!_playbackTask.IsCompleted)
+        {
+            _playbackTaskCancellationToken.Cancel();
+            _playbackTaskCancellationToken.Dispose();
+            _playbackTaskCancellationToken = new();
+        }
+        ResetSynth();
+    }
+
+    public void IncreaseTempoScale(double factor) => TempoScale += factor;
+    public void DecreaseTempoScale(double factor) => TempoScale -= factor;
 }
 
 public record Note
