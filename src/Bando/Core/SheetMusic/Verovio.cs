@@ -316,8 +316,8 @@ public class Verovio : IDisposable
         }
         LibVerovio.vrvToolkit_setResourcePath(_tkPtr, Path.Combine(AppContext.BaseDirectory, "VerovioData"));
         SetOption("scaleToPageSize", "true");
-        SetOption("svgViewBox","true");
-        SetOption("adjustPageHeight","true");
+        SetOption("svgViewBox", "true");
+        SetOption("adjustPageHeight", "true");
     }
 
     // For setting multiple options at once (more efficient)
@@ -352,7 +352,7 @@ public class Verovio : IDisposable
         return LibVerovio.vrvToolkit_loadFile(_tkPtr, filename);
     }
 
-    public byte[] RenderToSvg(int pageNumber = 1, bool includeXmlDeclaration = false)
+    public string RenderToSvg(int pageNumber = 1, bool includeXmlDeclaration = false)
     {
         if (pageNumber < 1)
         {
@@ -363,15 +363,15 @@ public class Verovio : IDisposable
 
         if (svgPtr == nint.Zero)
         {
-            return Array.Empty<byte>();
+            return "";
         }
 
         string? svgString = Marshal.PtrToStringAnsi(svgPtr);
         if (string.IsNullOrEmpty(svgString))
         {
-            return Array.Empty<byte>();
+            return "";
         }
-        return System.Text.Encoding.UTF8.GetBytes(svgString);
+        return svgString;
     }
 
     public void Dispose()
