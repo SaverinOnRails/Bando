@@ -393,7 +393,7 @@ public class Verovio : IDisposable
         }
     }
 
-    internal object GetPageCount()
+    internal int GetPageCount()
     {
         if (_tkPtr == nint.Zero) throw new Exception();
         return LibVerovio.vrvToolkit_getPageCount(_tkPtr);

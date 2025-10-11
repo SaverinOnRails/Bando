@@ -5,12 +5,16 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using Bando.Controls;
 using Bando.Core.Midi;
+using Bando.Core.SheetMusic.Rendering;
 using CommunityToolkit.Mvvm.ComponentModel;
 namespace Bando.ViewModels;
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     private MidiPlayer _midiPlayer = new();
+    private SheetMusicRenderer? _sheetMusicRenderer;
     private PianoKeyboard? _keyboard = null;
+    private Sheet? _sheet = null;
+    private bool _disposed = false;
 
     private bool _updatingPos = false;
     private double _location = 0;
@@ -44,6 +48,18 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             _keyboard = value;
             value!.KeyPressed += KeypressedOnKeyboard;
+        }
+    }
+
+    public Sheet? Sheet
+    {
+        get => _sheet;
+        set
+        {
+            if (value is null) return;
+            _sheet = value;
+            _sheetMusicRenderer = new(value);
+            _sheetMusicRenderer.Init();
         }
     }
 
@@ -129,6 +145,20 @@ public partial class MainWindowViewModel : ViewModelBase
         TempoScale = Math.Round(_midiPlayer.TempoScale, 2);
     }
     public void Pause() => _midiPlayer.Pause();
-    public void Play() => _midiPlayer.Play();
+    public void Play()
+    {
+        _sheetMusicRenderer?.RenderAll();
+        _midiPlayer.Play();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            _midiPlayer.Dispose();
+            _sheetMusicRenderer?.Dispose();
+        }
+    }
+
     public string Greeting { get; } = "Welcome to Avalonia!";
 }

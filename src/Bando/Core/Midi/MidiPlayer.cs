@@ -37,6 +37,7 @@ public class MidiPlayer : IDisposable
     public void Dispose()
     {
         Dispose(true);
+        GC.SuppressFinalize(this);
     }
     protected virtual void Dispose(bool dispose)
     {
@@ -45,6 +46,10 @@ public class MidiPlayer : IDisposable
             _synth.Dispose();
             _disposed = true;
         }
+    }
+    ~MidiPlayer()
+    {
+        Dispose();
     }
     public void LoadMidiFile(string file)
     {

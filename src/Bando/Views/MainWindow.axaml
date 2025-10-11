@@ -31,7 +31,7 @@
             <TextBlock Text="{Binding TempoScale}" />
             <Button Command="{Binding DecreaseTempo}">Dec</Button>
         </StackPanel>
-        <Panel Grid.Row="1" Background="Black">
+        <Panel Grid.Row="1" Background="#FFFD8F">
             <Slider
                 Height="100"
                 Margin="10,0,10,0"
@@ -39,6 +39,9 @@
                 VerticalAlignment="Top"
                 Maximum="{Binding Duration}"
                 Value="{Binding Location}" />
+            <ScrollViewer HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <controls:Sheet x:Name="sheet" />
+            </ScrollViewer>
         </Panel>
         <Panel
             Grid.Row="2"
