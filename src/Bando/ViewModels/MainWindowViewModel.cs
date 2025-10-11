@@ -20,6 +20,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     public double duration;
 
+
     public double Location
     {
         get => _location;
@@ -53,6 +54,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _midiPlayer.MidiKeyOff += MidiKeyOff;
         _midiPlayer.MidiPlaybackLocationChanged += MidiPlaybackLocationChanged;
         _midiPlayer.TurnOffAllNotes += TurnOffAllNotes;
+
     }
 
     private void TurnOffAllNotes(object? sender, EventArgs e)

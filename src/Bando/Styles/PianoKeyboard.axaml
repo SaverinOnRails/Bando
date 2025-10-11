@@ -61,10 +61,11 @@
     <Style Selector="control|BlackPianoKey Border">
         <Setter Property="Background">
             <Setter.Value>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="{DynamicResource BlackKeyTopColor}" />
-                    <GradientStop Offset="1" Color="{DynamicResource BlackKeyBottomColor}" />
-                </LinearGradientBrush>
+                <ImageBrush
+                    AlignmentX="Center"
+                    AlignmentY="Center"
+                    Source="/Assets/black-key-texture.png"
+                    Stretch="UniformToFill" />            
             </Setter.Value>
         </Setter>
         <Setter Property="BorderBrush" Value="{DynamicResource BlackKeyBorderColor}" />
@@ -78,7 +79,7 @@
     <Style Selector="control|BlackPianoKey:pointerover Border">
         <Setter Property="Background">
             <Setter.Value>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%" >
                     <GradientStop Offset="0" Color="{DynamicResource BlackKeyHoverTopColor}" />
                     <GradientStop Offset="1" Color="{DynamicResource BlackKeyHoverBottomColor}" />
                 </LinearGradientBrush>

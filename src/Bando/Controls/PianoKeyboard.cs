@@ -21,9 +21,9 @@ public class PianoKeyboard : Panel
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        DrawKeys();
+        DrawWhiteKeys();
     }
-    private void DrawKeys()
+    private void DrawWhiteKeys()
     {
         Background = Avalonia.Media.Brushes.Black;
         Grid keyboardGrid = new();
@@ -50,45 +50,49 @@ public class PianoKeyboard : Panel
         if (sender is null) return;
         if (e.Property == BoundsProperty)
         {
-            _blackKeyCanvas.Children.Clear();
-            var whiteKeys = _whiteKeyGrid.Children.OfType<WhitePianoKey>().ToList();
-            double offset = 0;
-            NoteName[] twoBlacksProgression = new[] { NoteName.CSharp, NoteName.DSharp };
-            NoteName[] threeBlacksProgression = new[] { NoteName.FSharp, NoteName.GSharp, NoteName.ASharp };
-            int octave = 0;
-            foreach (var whiteKey in whiteKeys)
-            {
-                //render black keys in segments
-                int blackCount = 0;
-                if (whiteKey.NoteName == NoteName.C)
-                    blackCount = 2;
-                else if (whiteKey.NoteName == NoteName.F)
-                    blackCount = 3;
-                else if (whiteKey.NoteName == NoteName.A && whiteKey.Octave == 0)
-                    blackCount = 1;
-
-                if (blackCount > 0 && whiteKey.Octave != 8)
-                {
-                    double blackWidth = whiteKey.Bounds.Width * 0.6;
-                    double blackHeight = whiteKey.Bounds.Height * 0.65;
-                    double spacing = whiteKey.Bounds.Width * 0.4;
-                    double push = whiteKey.Bounds.Width - blackWidth / 2;
-                    for (int i = 0; i < blackCount; i++)
-                    {
-                        var mkey = (blackCount == 2) ? twoBlacksProgression[i] :
-                            (blackCount == 3) ? threeBlacksProgression[i] : NoteName.ASharp;
-                        var key = new BlackPianoKey { Width = blackWidth, Height = blackHeight, NoteName = mkey, Octave = octave };
-                        Canvas.SetLeft(key, offset + push);
-                        _blackKeyCanvas.Children.Add(key);
-                        push += blackWidth + spacing;
-                        if (mkey == NoteName.ASharp) octave++;
-                    }
-                }
-                offset += whiteKey.Bounds.Width;
-            }
+            DrawBlackKeys();
         }
     }
 
+    private void DrawBlackKeys()
+    {
+        _blackKeyCanvas.Children.Clear();
+        var whiteKeys = _whiteKeyGrid.Children.OfType<WhitePianoKey>().ToList();
+        double offset = 0;
+        NoteName[] twoBlacksProgression = new[] { NoteName.CSharp, NoteName.DSharp };
+        NoteName[] threeBlacksProgression = new[] { NoteName.FSharp, NoteName.GSharp, NoteName.ASharp };
+        int octave = 0;
+        foreach (var whiteKey in whiteKeys)
+        {
+            //render black keys in segments
+            int blackCount = 0;
+            if (whiteKey.NoteName == NoteName.C)
+                blackCount = 2;
+            else if (whiteKey.NoteName == NoteName.F)
+                blackCount = 3;
+            else if (whiteKey.NoteName == NoteName.A && whiteKey.Octave == 0)
+                blackCount = 1;
+
+            if (blackCount > 0 && whiteKey.Octave != 8)
+            {
+                double blackWidth = whiteKey.Bounds.Width * 0.6;
+                double blackHeight = whiteKey.Bounds.Height * 0.65;
+                double spacing = whiteKey.Bounds.Width * 0.4;
+                double push = whiteKey.Bounds.Width - blackWidth / 2;
+                for (int i = 0; i < blackCount; i++)
+                {
+                    var mkey = (blackCount == 2) ? twoBlacksProgression[i] :
+                        (blackCount == 3) ? threeBlacksProgression[i] : NoteName.ASharp;
+                    var key = new BlackPianoKey { Width = blackWidth, Height = blackHeight, NoteName = mkey, Octave = octave };
+                    Canvas.SetLeft(key, offset + push);
+                    _blackKeyCanvas.Children.Add(key);
+                    push += blackWidth + spacing;
+                    if (mkey == NoteName.ASharp) octave++;
+                }
+            }
+            offset += whiteKey.Bounds.Width;
+        }
+    }
     public void IlluminateKey(Bando.Core.Midi.Note note, bool on)
     {
         Dispatcher.UIThread.Post(() =>
@@ -198,7 +202,7 @@ public class WhitePianoKey : PianoKey
         {
             BorderBrush = Avalonia.Media.Brushes.Black,
             BorderThickness = new(0, 0, 1, 1),
-            CornerRadius = new(0, 0, 8, 8)
+            CornerRadius = new(0, 0, 4, 4)
         };
         Children.Add(keyBorder);
     }
