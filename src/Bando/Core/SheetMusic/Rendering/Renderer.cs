@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -18,6 +19,7 @@ public class SheetMusicRenderer : IDisposable
     private ResvgRenderTree? _renderTree;
     private Verovio _verovio = new();
     private Sheet _sheetControl;
+    private ConcurrentDictionary<int, WriteableBitmap> _bitmapCache = new();
     private List<string> _svgs = new();
 
     public SheetMusicRenderer(Sheet sheetControl)
@@ -43,14 +45,14 @@ public class SheetMusicRenderer : IDisposable
     public void Init()
     {
         _svgs = new();
-        _verovio.LoadFile("/home/noble/Midis/rev.musicxml");
+        _verovio.LoadFile("/home/noble/Midis/campanella.musicxml");
         var pagecount = _verovio.GetPageCount();
         Console.WriteLine($"discovered {pagecount} pages");
         _sheetControl.Purge();
         _sheetControl.SetPageCount(pagecount);
         for (int i = 0; i < pagecount; i++)
         {
-            _svgs.Add(_verovio.RenderToSvg(i + 1)); 
+            _svgs.Add(_verovio.RenderToSvg(i + 1));
         }
     }
 
@@ -86,7 +88,8 @@ public class SheetMusicRenderer : IDisposable
                 transform.a = scale;
                 transform.d = scale;
                 _renderTree.Render(transform, (uint)width, (uint)height, pixmap);
-
+                
+                //lookup cache for suitable bitmap
                 var bitmap = new WriteableBitmap(
                     new PixelSize(width, height),
                     new Vector(96, 96),
@@ -118,6 +121,7 @@ public class SheetMusicRenderer : IDisposable
             var capture = i;
             Task.Run(() => RenderPageAsync(capture));
         }
+        GC.Collect();
     }
 
     ~SheetMusicRenderer()
