@@ -12,6 +12,7 @@ public partial class MainWindow : Window
         DataContext = new MainWindowViewModel()
         {
             Keyboard = keyboard,
+            SvgImage = svgImage,
         };
     }
 }

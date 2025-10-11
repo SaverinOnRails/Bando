@@ -31,15 +31,25 @@
             <TextBlock Text="{Binding TempoScale}" />
             <Button Command="{Binding DecreaseTempo}">Dec</Button>
         </StackPanel>
-        <Panel Grid.Row="1" Background="Black">
-            <Slider
-                Height="100"
-                Margin="10,0,10,0"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Top"
-                Maximum="{Binding Duration}"
-                Value="{Binding Location}" />
-        </Panel>
+        <ScrollViewer
+            Grid.Row="1"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Auto">
+            <Panel Background="Wheat">
+                <Slider
+                    Height="100"
+                    Margin="10,0,10,0"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Maximum="{Binding Duration}"
+                    Value="{Binding Location}" />
+                <Image
+                    x:Name="svgImage"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Stretch="None" />
+            </Panel>
+        </ScrollViewer>        
         <Panel
             Grid.Row="2"
             Height="145"

@@ -1,16 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using Bando.Controls;
 using Bando.Core.Midi;
+using Bando.Core.SheetMusic;
+using Bando.Core.SheetMusic.Rendering;
 using CommunityToolkit.Mvvm.ComponentModel;
 namespace Bando.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private MidiPlayer _midiPlayer = new();
     private PianoKeyboard? _keyboard = null;
+    private Image? _svgImage = null;
 
     private bool _updatingPos = false;
     private double _location = 0;
@@ -46,6 +54,74 @@ public partial class MainWindowViewModel : ViewModelBase
             value!.KeyPressed += KeypressedOnKeyboard;
         }
     }
+
+    public Image? SvgImage
+    {
+        get => _svgImage;
+        set
+        {
+            _svgImage = value;
+            value!.PropertyChanged += SvgImagePropertyChanged;
+        }
+    }
+
+    private void SvgImagePropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+if (e.Property == Image.BoundsProperty)
+{
+    var panel = _svgImage.FindAncestorOfType<Panel>();
+    var panelWidth = panel?.Bounds.Width ?? 0;
+    
+    Console.WriteLine($"Panel width: {panelWidth}");
+    
+    if (panelWidth == 0) return;
+    
+    var ver = new Verovio();
+    ver.LoadFile("/home/noble/Documents/Schubert_Staendchen_D.923.mei");
+    ver.SetOption("pageWidth", panelWidth.ToString());
+    Console.WriteLine($"Page count is {ver.GetPageCount()}");
+    
+    var svg = ver.RenderToSvg();
+    var resvgOpts = new ResvgOptions();
+    resvgOpts.LoadSystemFonts();
+    Console.WriteLine("loaded system fonts");
+    
+    var rsvgRenderTree = new ResvgRenderTree(resvgOpts);
+    rsvgRenderTree.ParseFromString(svg);
+    Console.WriteLine("render done");
+    
+    var imageSize = rsvgRenderTree.GetImageSize();
+    Console.WriteLine($"Image size is {imageSize.width}x{imageSize.height}");
+    
+    float scale = (float)panelWidth / imageSize.width;
+    
+    int width = (int)panelWidth;
+    int height = (int)(imageSize.height * scale);
+    
+    var pixmap = new byte[width * height * 4];
+    
+    var transform = LibResvg.resvg_transform_identity();
+    transform.a = scale;
+    transform.d = scale;
+    
+    rsvgRenderTree.Render(transform, (uint)width, (uint)height, pixmap);
+    
+    var writableBitmap = new WriteableBitmap(
+        new PixelSize(width, height),
+        new Vector(96, 96),
+        PixelFormat.Rgba8888,
+        AlphaFormat.Premul
+    );
+    
+    using (var lockedFramebuffer = writableBitmap.Lock())
+    {
+        Marshal.Copy(pixmap, 0, lockedFramebuffer.Address, pixmap.Length);
+    }
+    
+    _svgImage!.Source = writableBitmap;
+    rsvgRenderTree.Dispose();
+    resvgOpts.Dispose();
+}    }
 
     public MainWindowViewModel()
     {
