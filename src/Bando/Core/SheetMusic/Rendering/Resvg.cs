@@ -462,5 +462,8 @@ public class ResvgRenderTree : IDisposable
         Dispose();
     }
 }
-
+public static class ResvgTransform
+{
+    public static LibResvg.ResvgTransform Identity() => LibResvg.resvg_transform_identity();
+}
 
