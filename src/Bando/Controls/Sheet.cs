@@ -25,6 +25,7 @@ public class Sheet : StackPanel
         Children.Clear();
     }
 
+    //Purge should be called before this
     public void SetPageCount(int count)
     {
         for (int i = 0; i < count; i++)

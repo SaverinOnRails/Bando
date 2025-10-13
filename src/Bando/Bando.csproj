@@ -38,5 +38,7 @@
 		</PackageReference>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
 		<PackageReference Include="Melanchall.DryWetMidi" Version="8.0.3-prerelease1" />
+		<PackageReference Include="VelloSharp.Avalonia.Vello" Version="0.5.0-alpha.1" />
+		<PackageReference Include="VelloSharp.Native.Vello" Version="0.5.0-alpha.1" />
 	</ItemGroup>
 </Project>

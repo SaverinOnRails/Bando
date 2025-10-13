@@ -53,9 +53,7 @@ public class SheetMusicRenderer : IDisposable
                         await Task.Delay(_debounceDelay, token);
                         RenderAll();
                     }
-                    catch
-                    {
-                    }
+                    catch { }
                 });
             }
         }
@@ -74,18 +72,27 @@ public class SheetMusicRenderer : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public void Init()
+    public async void InitAsync(string source)
     {
-        _svgs = new();
-        _verovio.LoadFile("/home/noble/Downloads/Schubert_Staendchen_D.923.mei");
-        var pagecount = _verovio.GetPageCount();
-        Console.WriteLine($"discovered {pagecount} pages");
-        _sheetControl.Purge();
-        _sheetControl.SetPageCount(pagecount);
-        for (int i = 0; i < pagecount; i++)
+        CancelRenders();
+        await Task.Run(async () =>
         {
-            _svgs.Add(_verovio.RenderToSvg(i + 1));
-        }
+            _svgs = new();
+            _verovio.LoadData(MuseScoreManager.FromMidiToMei(source));
+            var pagecount = _verovio.GetPageCount();
+            Console.WriteLine($"discovered {pagecount} pages");
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                _sheetControl.Purge();
+                _bitmapCache.Clear();
+                _sheetControl.SetPageCount(pagecount);
+            });
+            for (int i = 0; i < pagecount; i++)
+            {
+                _svgs.Add(_verovio.RenderToSvg(i + 1));
+            }
+        });
+        RenderAll();
     }
     private readonly SemaphoreSlim _renderLock = new SemaphoreSlim(1, 1);
     public async Task RenderPageAsync(int pageIndex, CancellationToken ctx)
@@ -136,19 +143,18 @@ public class SheetMusicRenderer : IDisposable
                     {
                         ctx.ThrowIfCancellationRequested();
                         bitmap.Dispose();
-                        Console.WriteLine($"Disposed bitmap for page {pageIndex}");
                         bitmap = new WriteableBitmap(
                             new PixelSize(width, height),
                             new Vector(96, 96),
                             PixelFormat.Rgba8888,
                             AlphaFormat.Premul
                         );
-                        Console.WriteLine($"Restored bitmap for page {pageIndex}");
                         _bitmapCache[pageIndex] = bitmap;
                     }
                 }
                 using (var lockedFramebuffer = bitmap.Lock())
                 {
+                    Console.WriteLine("Copying new bitmap");
                     Marshal.Copy(pixmap, 0, lockedFramebuffer.Address, pixmap.Length);
                 }
                 return bitmap;
@@ -171,10 +177,7 @@ public class SheetMusicRenderer : IDisposable
     }
     public void RenderAll()
     {
-        _renderCancellationToken.Cancel();
-        _renderCancellationToken.Dispose();
-
-        _renderCancellationToken = new();
+        CancelRenders();
         for (int i = 0; i < _svgs.Count; i++)
         {
             var capture = i;
@@ -182,6 +185,12 @@ public class SheetMusicRenderer : IDisposable
         }
     }
 
+    private void CancelRenders()
+    {
+        _renderCancellationToken.Cancel();
+        _renderCancellationToken.Dispose();
+        _renderCancellationToken = new();
+    }
     ~SheetMusicRenderer()
     {
         Dispose();

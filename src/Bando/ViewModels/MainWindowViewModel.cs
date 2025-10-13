@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using Bando.Controls;
 using Bando.Core.Midi;
+using Bando.Core.SheetMusic;
 using Bando.Core.SheetMusic.Rendering;
 using CommunityToolkit.Mvvm.ComponentModel;
 namespace Bando.ViewModels;
@@ -59,13 +60,11 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (value is null) return;
             _sheet = value;
             _sheetMusicRenderer = new(value);
-            _sheetMusicRenderer.Init();
         }
     }
 
     public MainWindowViewModel()
     {
-        _midiPlayer.LoadMidiFile("/home/noble/Midis/Beatles - Hey Jude.mid");
         _midiPlayer.MidiKeyOn += MidiKeyOn;
         _midiPlayer.MidiKeyOff += MidiKeyOff;
         _midiPlayer.MidiPlaybackLocationChanged += MidiPlaybackLocationChanged;
@@ -125,12 +124,22 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             }
         }}
         });
-
         if (files.Count >= 1)
         {
             var localPath = files[0].TryGetLocalPath();
             if (localPath is not null)
+            {
                 _midiPlayer.LoadMidiFile(localPath);
+                try
+                {
+                    var version = MuseScoreManager.Version();
+                    _sheetMusicRenderer?.InitAsync(localPath);
+                }
+                catch
+                {
+                    Console.WriteLine("Musescore is not installed");
+                }
+            }
         }
     }
     public void IncreaseTempo()
@@ -147,7 +156,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     public void Pause() => _midiPlayer.Pause();
     public void Play()
     {
-        _sheetMusicRenderer?.RenderAll();
         _midiPlayer.Play();
     }
 

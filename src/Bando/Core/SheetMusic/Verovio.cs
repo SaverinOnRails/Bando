@@ -352,6 +352,11 @@ public class Verovio : IDisposable
         return LibVerovio.vrvToolkit_loadFile(_tkPtr, filename);
     }
 
+    public bool LoadData(string data)
+    {
+        return LibVerovio.vrvToolkit_loadData(_tkPtr, data);
+    }
+
     public string RenderToSvg(int pageNumber = 1, bool includeXmlDeclaration = false)
     {
         if (pageNumber < 1)

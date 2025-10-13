@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using System;
+using VelloSharp.Avalonia.Vello;
 
 namespace Bando;
 
@@ -18,4 +19,5 @@ sealed class Program
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+
 }

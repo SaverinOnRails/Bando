@@ -31,7 +31,10 @@
             <TextBlock Text="{Binding TempoScale}" />
             <Button Command="{Binding DecreaseTempo}">Dec</Button>
         </StackPanel>
-        <Panel Grid.Row="1" Background="#FFFD8F">
+        <Panel Grid.Row="1">
+            <Panel.Background>
+                <SolidColorBrush Color="White"/>
+            </Panel.Background>
             <Slider
                 Height="100"
                 Margin="10,0,10,0"
