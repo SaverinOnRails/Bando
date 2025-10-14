@@ -379,6 +379,13 @@ public class Verovio : IDisposable
         return svgString;
     }
 
+    public string? ElementsAtTime(double ms)
+    {
+        var ptr = LibVerovio.vrvToolkit_getElementsAtTime(_tkPtr, (int)ms);
+        if (ptr == nint.Zero) return null;
+        return Marshal.PtrToStringUTF8(ptr);
+    }
+
     public void Dispose()
     {
         Dispose(true);

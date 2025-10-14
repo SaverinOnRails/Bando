@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
@@ -23,6 +27,7 @@ public class SheetMusicRenderer : IDisposable
     private CancellationTokenSource _renderCancellationToken = new();
     private List<string> _svgs = new();
     private CancellationTokenSource? _boundsChangedCts;
+    private const string SvgNamespace = "http://www.w3.org/2000/svg";
     private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(150);
 
     public SheetMusicRenderer(Sheet sheetControl)
@@ -80,7 +85,6 @@ public class SheetMusicRenderer : IDisposable
             _svgs = new();
             _verovio.LoadData(MuseScoreManager.FromMidiToMei(source));
             var pagecount = _verovio.GetPageCount();
-            Console.WriteLine($"discovered {pagecount} pages");
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 _sheetControl.Purge();
@@ -94,8 +98,45 @@ public class SheetMusicRenderer : IDisposable
         });
         RenderAll();
     }
+
+    public async void MidiNoteChanged(double ms)
+    {
+        return;
+        if (_svgs.Count == 0) return;
+        var noteAt = _verovio.ElementsAtTime(ms);
+        if (noteAt is null) return;
+        var result = JsonSerializer.Deserialize(noteAt, VerovioJsonContext.Default.VerovioElementAtTimeModel);
+        if (result is null) return;
+        var svg = _svgs[result.page - 1];
+
+        var svgDoc = XDocument.Parse(svg);
+        XNamespace ns = SvgNamespace;
+        foreach (var noteId in result.notes)
+        {
+            await HighlightElement(svgDoc, ns, noteId, result.page - 1);
+        }
+    }
+
+    private async Task HighlightElement(XDocument svgDoc, XNamespace ns, string noteId, int pageIndex)
+    {
+        var element = svgDoc.Descendants(ns + "g").FirstOrDefault(e => e.Attribute("id")?.Value == noteId);
+        if (element is null) return;
+        var styleAttr = element.Attribute("style");
+        if (styleAttr != null)
+        {
+            styleAttr.Value += "; fill: #ff0000; opacity: 0.7;";
+        }
+        else
+        {
+            element.Add(new XAttribute("style", "fill: #ff0000; opacity: 0.7;"));
+        }
+        var svg = svgDoc.ToString();
+        // CancelRenders();
+        await RenderPageAsync(pageIndex, _renderCancellationToken.Token, svg);
+    }
+
     private readonly SemaphoreSlim _renderLock = new SemaphoreSlim(1, 1);
-    public async Task RenderPageAsync(int pageIndex, CancellationToken ctx)
+    public async Task RenderPageAsync(int pageIndex, CancellationToken ctx, string? rawSvg = null)
     {
         try
         {
@@ -112,7 +153,7 @@ public class SheetMusicRenderer : IDisposable
             var writableBitmap = await Task.Run(async () =>
             {
                 await _renderLock.WaitAsync(ctx);
-                _renderTree.ParseFromString(_svgs[pageIndex]);
+                _renderTree.ParseFromString(rawSvg == null ? _svgs[pageIndex] : rawSvg);
                 var imageSize = _renderTree.GetImageSize();
 
                 float scale = (float)pwidth / imageSize.width;
@@ -195,4 +236,19 @@ public class SheetMusicRenderer : IDisposable
     {
         Dispose();
     }
+}
+
+internal class VerovioElementAtTimeModel
+{
+    public List<string> chords { get; set; } = new();
+    public string measure { get; set; } = "";
+    public List<string> notes { get; set; } = new();
+    public int page { get; set; }
+    public List<string> rests { get; set; } = new();
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true)]
+[JsonSerializable(typeof(VerovioElementAtTimeModel))]
+internal partial class VerovioJsonContext : JsonSerializerContext
+{
 }
