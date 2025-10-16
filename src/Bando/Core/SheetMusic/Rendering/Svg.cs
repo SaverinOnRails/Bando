@@ -90,26 +90,49 @@ internal class VerovioSvgRenderer
                 Control? path;
                 if (_globalDefs.TryGetValue(dictEnry, out path) && path is Path p)
                 {
+                    TransformGroup totalTransformGroup = new();
                     LogicalSvgGroup useGroup = new();
-                    useGroup.RenderTransform = _use.ToAvaloniaTransformGroup();
-                    useGroup.Children.Add(p.ShallowClone());
+                    useGroup.Children.Add(p.DeepCopy());
+                    var originalPathTransform = p.RenderTransform;
+
+                    //apply the original transformation first
+                    if (originalPathTransform is not null)
+                    {
+                        totalTransformGroup.Children.Add((Transform)originalPathTransform);
+                    }
+                    foreach (var t in _use.ToAvaloniaTransformGroup().Children)
+                    {
+                        totalTransformGroup.Children.Add(t);
+                    }
+                    useGroup.RenderTransform = totalTransformGroup;
                     group.Children.Add(useGroup);
                 }
             }
             else if (elem is SvgPolygon _polygon)
             {
-                group.Children.Add(_polygon.ToAvaloniaPolygon());
+                LogicalSvgGroup polyGroup = new();
+                polyGroup.Children.Add(_polygon.ToAvaloniaPolygon());
+                group.Children.Add(polyGroup);
+            }
+            else if (elem is SvgPolyline _polyline)
+            {
+                group.Children.Add(_polyline.ToAvaloniaPolyline());
             }
             else if (elem is SvgEllipse _ellipse)
             {
                 group.Children.Add(_ellipse.ToAvaloniaEllipse());
             }
-            else {
-                Console.WriteLine(elem.GetXML());
-                Console.WriteLine();
-                Console.WriteLine();
+            else if (elem is SvgRectangle _rect)
+            {
+                group.Children.Add(_rect.ToAvaloniaRectangle());
             }
-            // else throw new UnhandledElementException(elem);
+            // else
+            // {
+            //     Console.WriteLine(elem.GetXML());
+            //     Console.WriteLine();
+            //     Console.WriteLine();
+            // }
+            else throw new UnhandledElementException(elem);
         }
         return group;
     }
@@ -125,7 +148,7 @@ internal class VerovioSvgRenderer
                 {
                     if (path is SvgPath p)
                     {
-                        _globalDefs[groupId] = p.ToAvaloniaPath(); //TODO: Should be in a logical group
+                        _globalDefs[groupId] = p.ToAvaloniaPath();
                     }
                     else throw new UnhandledElementException(elem);
                 }
@@ -175,8 +198,10 @@ public static class SvgExtensions
         var transformGroup = new TransformGroup();
         if (self.Transforms is not null)
         {
-            foreach (var transform in self.Transforms)
+            //create transform group in reverse order because svgs are retarded
+            for (int i = self.Transforms.Count - 1; i >= 0; i--)
             {
+                var transform = self.Transforms[i];
                 if (transform is SvgTranslate t)
                 {
                     transformGroup.Children.Add(new TranslateTransform(t.X, t.Y));
@@ -228,13 +253,17 @@ public static class SvgExtensions
         return path;
     }
 
-    public static Avalonia.Controls.Shapes.Path ShallowClone(this Path self)
+    public static Avalonia.Controls.Shapes.Path DeepCopy(this Path self)
     {
         return new()
         {
-            Data = self.Data,
-            RenderTransform = self.RenderTransform,
+            Data = self.Data?.Clone(),
             Stroke = self.Stroke,
+            Fill = self.Fill,
+            StrokeThickness = self.StrokeThickness,
+            StrokeLineCap = self.StrokeLineCap,
+            StrokeJoin = self.StrokeJoin,
+            Stretch = self.Stretch
         };
     }
 
@@ -270,5 +299,48 @@ public static class SvgExtensions
         }
         polygon.Points = points;
         return polygon;
+    }
+
+    public static Avalonia.Controls.Shapes.Polyline ToAvaloniaPolyline(this SvgPolyline self)
+    {
+        var polyline = new Polyline
+        {
+            Fill = Brushes.Transparent,
+            Stroke = Brushes.Black,
+            StrokeThickness = (float)self.StrokeWidth,
+            Opacity = self.StrokeOpacity,
+            StrokeLineCap = self.StrokeLineCap.ToAvaloniaPenLineCap(),
+            StrokeJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin(),
+        };
+
+        var points = new Points();
+
+        for (int i = 0; i < self.Points.Count - 1; i += 2)
+        {
+            double x = (double)self.Points[i].Value;
+            double y = (double)self.Points[i + 1].Value;
+            points.Add(new Point(x, y));
+        }
+
+        polyline.Points = points;
+        return polyline;
+    }
+
+    public static Avalonia.Controls.Shapes.Rectangle ToAvaloniaRectangle(this SvgRectangle self)
+    {
+        var rect = new Rectangle
+        {
+            Width = (double)self.Width.Value,
+            Height = (double)self.Height.Value,
+            RadiusX = ((double)self.CornerRadiusX.Value),
+            RadiusY = (double)(self.CornerRadiusY.Value),
+            Fill = Brushes.Transparent,
+            Stroke = Brushes.Black,
+            StrokeThickness = (float)self.StrokeWidth,
+            Opacity = self.StrokeOpacity,
+        };
+        Canvas.SetLeft(rect, (double)self.X.Value);
+        Canvas.SetTop(rect, (double)self.Y.Value);
+        return rect;
     }
 }

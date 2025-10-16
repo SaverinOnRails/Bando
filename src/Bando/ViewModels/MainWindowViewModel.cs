@@ -165,7 +165,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         if (_disposed)
         {
             _midiPlayer.Dispose();
-            _sheetMusicRenderer?.Dispose();
         }
     }
 

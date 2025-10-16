@@ -1,23 +1,18 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Bando.Controls;
 namespace Bando.Core.SheetMusic.Rendering;
-public class SheetMusicRenderer : IDisposable
+public class SheetMusicRenderer
 {
     private bool _disposed = false;
-    private ResvgOptions? _renderOptions;
-    private ResvgRenderTree? _renderTree;
     private Verovio _verovio = new();
     private Sheet _sheetControl;
-    private ConcurrentDictionary<int, WriteableBitmap> _bitmapCache = new();
     private CancellationTokenSource _renderCancellationToken = new();
     private List<string> _svgs = new();
     private CancellationTokenSource? _boundsChangedCts;
@@ -63,18 +58,6 @@ public class SheetMusicRenderer : IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        if (!_disposed)
-        {
-            _renderTree?.Dispose();
-            _renderOptions?.Dispose();
-            _renderTree = null;
-            _renderOptions = null;
-            _disposed = true;
-        }
-        GC.SuppressFinalize(this);
-    }
 
     public async void InitAsync(string source)
     {
@@ -87,7 +70,6 @@ public class SheetMusicRenderer : IDisposable
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 _sheetControl.Purge();
-                _bitmapCache.Clear();
                 _sheetControl.SetPageCount(pagecount);
             });
             for (int i = 0; i < pagecount; i++)
@@ -101,7 +83,6 @@ public class SheetMusicRenderer : IDisposable
     public void RenderPageAsync(int pageIndex, CancellationToken ctx)
     {
         var renderer = new VerovioSvgRenderer();
-        Console.WriteLine(_svgs[pageIndex]);
         var dom = renderer.Load(_svgs[pageIndex]);
         var canvas = (_sheetControl.Children[pageIndex] as PageCanvas);
         if (canvas is null) return;
@@ -136,10 +117,6 @@ public class SheetMusicRenderer : IDisposable
         _renderCancellationToken.Cancel();
         _renderCancellationToken.Dispose();
         _renderCancellationToken = new();
-    }
-    ~SheetMusicRenderer()
-    {
-        Dispose();
     }
 }
 
