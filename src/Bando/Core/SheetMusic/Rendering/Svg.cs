@@ -4,6 +4,7 @@ namespace Bando.Core.SheetMusic.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
@@ -19,7 +20,6 @@ internal class VerovioSvgRenderer
     public List<Control> Load(string svg)
     {
         SvgDocument svgDoc = SvgDocument.FromSvg<SvgDocument>(svg);
-        Console.WriteLine($"Root viewbox : {svgDoc.ViewBox.Width}x{svgDoc.ViewBox.Height}");
         Height = svgDoc.ViewBox.Height;
         Width = svgDoc.ViewBox.Width;
         foreach (SvgElement elem in svgDoc.Children)
@@ -49,8 +49,6 @@ internal class VerovioSvgRenderer
             double scaleX = Width / frag.ViewBox.Width;
             double scaleY = Height / frag.ViewBox.Height;
 
-            Console.WriteLine($"Fragment viewbox: {frag.ViewBox.Width}x{frag.ViewBox.Height}");
-            Console.WriteLine($"Scale factors: {scaleX}x{scaleY}");
             var transformGroup = new TransformGroup();
             transformGroup.Children.Add(new ScaleTransform(scaleX, scaleY));
             fragmentContainer.RenderTransform = transformGroup;
@@ -100,10 +98,18 @@ internal class VerovioSvgRenderer
             }
             else if (elem is SvgPolygon _polygon)
             {
-                var polygon = new Polygon();
+                group.Children.Add(_polygon.ToAvaloniaPolygon());
             }
-            else if (elem is SvgEllipse _elipse) { }
-            else throw new UnhandledElementException(elem);
+            else if (elem is SvgEllipse _ellipse)
+            {
+                group.Children.Add(_ellipse.ToAvaloniaEllipse());
+            }
+            else {
+                Console.WriteLine(elem.GetXML());
+                Console.WriteLine();
+                Console.WriteLine();
+            }
+            // else throw new UnhandledElementException(elem);
         }
         return group;
     }
@@ -230,5 +236,39 @@ public static class SvgExtensions
             RenderTransform = self.RenderTransform,
             Stroke = self.Stroke,
         };
+    }
+
+    public static Avalonia.Controls.Shapes.Ellipse ToAvaloniaEllipse(this SvgEllipse self)
+    {
+        var ellipse = new Ellipse()
+        {
+            Width = self.RadiusX * 2,
+            Height = self.RadiusY * 2,
+            Fill = Brushes.Black,
+            Stroke = Brushes.Black,
+            Opacity = 1.0,
+        };
+        Canvas.SetLeft(ellipse, self.CenterX - self.RadiusX);
+        Canvas.SetTop(ellipse, self.CenterY - self.RadiusY);
+        return ellipse;
+    }
+    public static Avalonia.Controls.Shapes.Polygon ToAvaloniaPolygon(this SvgPolygon self)
+    {
+        var polygon = new Polygon()
+        {
+            Fill = Brushes.Black,
+            Stroke = Brushes.Black,
+            Opacity = 1.0,
+        };
+        var points = new Points();
+
+        for (int i = 0; i < self.Points.Count - 1; i += 2)
+        {
+            double x = (double)self.Points[i].Value;
+            double y = (double)self.Points[i + 1].Value;
+            points.Add(new Point(x, y));
+        }
+        polygon.Points = points;
+        return polygon;
     }
 }

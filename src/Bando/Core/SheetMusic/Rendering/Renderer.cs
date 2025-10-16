@@ -5,7 +5,6 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -99,10 +98,10 @@ public class SheetMusicRenderer : IDisposable
         RenderAll();
     }
 
-    private readonly SemaphoreSlim _renderLock = new SemaphoreSlim(1, 1);
     public void RenderPageAsync(int pageIndex, CancellationToken ctx)
     {
         var renderer = new VerovioSvgRenderer();
+        Console.WriteLine(_svgs[pageIndex]);
         var dom = renderer.Load(_svgs[pageIndex]);
         var canvas = (_sheetControl.Children[pageIndex] as PageCanvas);
         if (canvas is null) return;
