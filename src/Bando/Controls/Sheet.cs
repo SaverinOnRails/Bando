@@ -11,17 +11,17 @@ public class Sheet : StackPanel
     }
     public void Purge()
     {
-        foreach (var child in Children)
-        {
-            if (child is Image image)
-            {
-                if (image.Source is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-                image.Source = null;
-            }
-        }
+        // foreach (var child in Children)
+        // {
+        //     if (child is Image image)
+        //     {
+        //         if (image.Source is IDisposable disposable)
+        //         {
+        //             disposable.Dispose();
+        //         }
+        //         image.Source = null;
+        //     }
+        // }
         Children.Clear();
     }
 
@@ -30,10 +30,8 @@ public class Sheet : StackPanel
     {
         for (int i = 0; i < count; i++)
         {
-            Children.Add(new Image()
+            Children.Add(new Canvas()
             {
-                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top,
             });
         }
     }

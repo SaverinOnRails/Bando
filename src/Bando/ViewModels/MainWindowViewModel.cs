@@ -83,7 +83,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Location = newLocation;
         Duration = _midiPlayer.PlaybackDuration;
         _updatingPos = false;
-        _sheetMusicRenderer?.MidiNoteChanged(newLocation);
 
     }
 
