@@ -11,17 +11,6 @@ public class Sheet : StackPanel
     }
     public void Purge()
     {
-        // foreach (var child in Children)
-        // {
-        //     if (child is Image image)
-        //     {
-        //         if (image.Source is IDisposable disposable)
-        //         {
-        //             disposable.Dispose();
-        //         }
-        //         image.Source = null;
-        //     }
-        // }
         Children.Clear();
     }
 
@@ -30,9 +19,16 @@ public class Sheet : StackPanel
     {
         for (int i = 0; i < count; i++)
         {
-            Children.Add(new Canvas()
+            Children.Add(new PageCanvas()
             {
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
             });
         }
     }
+}
+
+public class PageCanvas : Canvas
+{
+    public double? OriginalSvgHeight { get; set; } = null;
+    public double? OriginalSvgWidth { get; set; } = null;
 }

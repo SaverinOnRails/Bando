@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using Bando.Controls;
@@ -27,32 +28,41 @@ public class SheetMusicRenderer : IDisposable
     public SheetMusicRenderer(Sheet sheetControl)
     {
         _sheetControl = sheetControl;
+        _sheetControl.PropertyChanged += SheetControlPropertyChanged;
     }
 
-    // private void SheetControlPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    // {
-    //     if (e.Property == Sheet.BoundsProperty)
-    //     {
-    //         if (e.OldValue is null) return;
-    //         var oldBounds = (Rect)e.OldValue;
-    //         if (_sheetControl.Bounds.Width > oldBounds.Width)
-    //         {
-    //             _boundsChangedCts?.Cancel();
-    //             _boundsChangedCts?.Dispose();
-    //             _boundsChangedCts = new();
-    //             var token = _boundsChangedCts.Token;
-    //             Task.Run(async () =>
-    //             {
-    //                 try
-    //                 {
-    //                     await Task.Delay(_debounceDelay, token);
-    //                     await RenderAll();
-    //                 }
-    //                 catch { }
-    //             });
-    //         }
-    //     }
-    // }
+    private void SheetControlPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == Sheet.BoundsProperty)
+        {
+            if (e.OldValue is null) return;
+            var oldBounds = (Rect)e.OldValue;
+            if (_sheetControl.Bounds.Width != oldBounds.Width)
+            {
+                foreach (var child in _sheetControl.Children)
+                {
+                    if (child is PageCanvas canvas)
+                    {
+                        var originalHeight = canvas.OriginalSvgHeight;
+                        var originalWidth = canvas.OriginalSvgWidth;
+                        if (originalHeight is null || originalWidth is null) return;
+
+                        var aspectRatio = originalWidth / originalHeight;
+                        var targetHeight = canvas.Bounds.Width / aspectRatio ?? 0;
+                        canvas.Height = targetHeight;
+                        var scaleX = canvas.Bounds.Width / originalWidth;
+                        var scaleY = targetHeight / originalHeight;
+
+                        var group = canvas.Children[0] as LogicalSvgGroup;
+                        var transformGroup = (TransformGroup?)group?.RenderTransform;
+                        //pop previous transform
+                        transformGroup?.Children.RemoveAt(transformGroup.Children.Count - 1);
+                        transformGroup?.Children.Add(new ScaleTransform(scaleX ?? 0, scaleY ?? 0));
+                    }
+                }
+            }
+        }
+    }
 
     public void Dispose()
     {
@@ -92,17 +102,23 @@ public class SheetMusicRenderer : IDisposable
     private readonly SemaphoreSlim _renderLock = new SemaphoreSlim(1, 1);
     public void RenderPageAsync(int pageIndex, CancellationToken ctx)
     {
-        Console.WriteLine("starting svg render, who is calling this methof");
         var renderer = new VerovioSvgRenderer();
         var dom = renderer.Load(_svgs[pageIndex]);
-        var canvas = (_sheetControl.Children[pageIndex] as Canvas);
-        if(canvas is null) return;
-        canvas.Height = renderer.Height;
-        canvas.Width = renderer.Width;
-        foreach (var d in dom)
-        {
-            canvas?.Children.Add(d);
-        }
+        var canvas = (_sheetControl.Children[pageIndex] as PageCanvas);
+        if (canvas is null) return;
+        var aspectRatio = renderer.Width / renderer.Height;
+        var targetHeight = canvas.Bounds.Width / aspectRatio;
+        canvas.Height = targetHeight;
+        var scaleX = canvas.Bounds.Width / renderer.Width;
+        var scaleY = targetHeight / renderer.Height;
+        var group = dom[0] as LogicalSvgGroup;
+        if (group is null) return;
+        var transformGroup = (TransformGroup?)group.RenderTransform;
+        transformGroup?.Children.Add(new ScaleTransform(scaleX, scaleY));
+        canvas?.Children.Add(group);
+
+        canvas!.OriginalSvgHeight = renderer.Height;
+        canvas!.OriginalSvgWidth = renderer.Width;
     }
 
     public void RenderAll()

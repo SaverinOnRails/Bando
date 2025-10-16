@@ -20,8 +20,8 @@ internal class VerovioSvgRenderer
     {
         SvgDocument svgDoc = SvgDocument.FromSvg<SvgDocument>(svg);
         Console.WriteLine($"Root viewbox : {svgDoc.ViewBox.Width}x{svgDoc.ViewBox.Height}");
-        Height = svgDoc.ViewBox.Width;
-        Width = svgDoc.ViewBox.Height;
+        Height = svgDoc.ViewBox.Height;
+        Width = svgDoc.ViewBox.Width;
         foreach (SvgElement elem in svgDoc.Children)
         {
             if (elem is SvgDefinitionList defs)
@@ -212,7 +212,7 @@ public static class SvgExtensions
         path.RenderTransform = self.ToAvaloniaTransformGroup();
         string pathData = self.PathData?.ToString() ?? string.Empty;
         var geometry = Geometry.Parse(pathData);
-        // path.Fill = Brushes.Black;
+        path.Fill = Brushes.Black;
         path.Stroke = Brushes.Black;
         path.Stretch = Stretch.None;
         path.Data = geometry;
