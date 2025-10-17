@@ -1,11 +1,11 @@
 // Attempt at a very basic svg renderer, good enough for verovio(i hope) and nothing else
-
 namespace Bando.Core.SheetMusic.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using Svg;
@@ -67,11 +67,20 @@ internal class VerovioSvgRenderer
 
     private Control RenderGroup(SvgGroup g)
     {
-        LogicalSvgGroup group = new();
         var transformGroup = new TransformGroup();
+        LogicalSvgGroup group;
+        if (g.GetClasses().Contains("note"))
+        {
+            group = new NoteLogicalSvgGroup() { NoteId = g.ID };
+        }
+        else
+        {
+            group = new LogicalSvgGroup();
+        }
         group.Id = g.ID;
         group.Class = g.GetClasses();
         group.RenderTransform = g.ToAvaloniaTransformGroup();
+
         foreach (var elem in g.Children)
         {
             if (elem is SvgGroup _g)
@@ -94,7 +103,6 @@ internal class VerovioSvgRenderer
                     LogicalSvgGroup useGroup = new();
                     useGroup.Children.Add(p.DeepCopy());
                     var originalPathTransform = p.RenderTransform;
-
                     //apply the original transformation first
                     if (originalPathTransform is not null)
                     {
@@ -184,6 +192,17 @@ public class LogicalSvgGroup : Canvas
     public string? Id { get; set; }
 }
 
+[PseudoClasses(":highlighted")]
+public class NoteLogicalSvgGroup : LogicalSvgGroup
+{
+    public string? NoteId { get; set; }
+
+    public void SetHighlighted(bool highlighted)
+    {
+        PseudoClasses.Set(":highlighted", highlighted);
+    }
+}
+
 public static class SvgExtensions
 {
     public static List<string> GetClasses(this SvgElement element)
@@ -243,8 +262,8 @@ public static class SvgExtensions
         path.RenderTransform = self.ToAvaloniaTransformGroup();
         string pathData = self.PathData?.ToString() ?? string.Empty;
         var geometry = Geometry.Parse(pathData);
-        path.Fill = Brushes.Black;
-        path.Stroke = Brushes.Black;
+        // path.Fill = Brushes.Black;
+        // path.Stroke = Brushes.Black;
         path.Stretch = Stretch.None;
         path.Data = geometry;
         path.StrokeLineCap = self.StrokeLineCap.ToAvaloniaPenLineCap();
@@ -258,8 +277,8 @@ public static class SvgExtensions
         return new()
         {
             Data = self.Data?.Clone(),
-            Stroke = self.Stroke,
-            Fill = self.Fill,
+            // Stroke = self.Stroke,
+            // Fill = self.Fill,
             StrokeThickness = self.StrokeThickness,
             StrokeLineCap = self.StrokeLineCap,
             StrokeJoin = self.StrokeJoin,

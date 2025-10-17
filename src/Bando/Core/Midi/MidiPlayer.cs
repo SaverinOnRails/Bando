@@ -13,7 +13,6 @@ using Melanchall.DryWetMidi.MusicTheory;
 
 public delegate void MidiKeyEventHandler(object sender, Note e);
 public delegate void MidiPlaybackLocationChangedHandler(object sender, double newLocation);
-
 public class MidiPlayer : IDisposable
 {
     private MidiFile? _midiFile = null;
@@ -96,7 +95,7 @@ public class MidiPlayer : IDisposable
                     int delayMs = (int)Math.Ceiling(Math.Max(1, Math.Min(remaining / tempoScale, 10)));
                     await Task.Delay(delayMs, ctx);
                 }
-                ctx.ThrowIfCancellationRequested();
+                ctx.ThrowIfCancellationRequested(); //point of interest
                 _pauseEvent.WaitOne();
                 ProcessMidiEvent(timedEvent.Event);
             }

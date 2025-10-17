@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
@@ -71,6 +72,8 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _midiPlayer.TurnOffAllNotes += TurnOffAllNotes;
     }
 
+
+
     private void TurnOffAllNotes(object? sender, EventArgs e)
     {
         if (Keyboard is null) return;
@@ -83,7 +86,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         Location = newLocation;
         Duration = _midiPlayer.PlaybackDuration;
         _updatingPos = false;
-
+        _sheetMusicRenderer?.MidiNoteChanged(newLocation);
     }
 
     private void KeypressedOnKeyboard(object? sender, KeyPressedEventArgs e)
@@ -133,7 +136,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
                 _midiPlayer.LoadMidiFile(localPath);
                 try
                 {
-                    var version = MuseScoreManager.Version();
+                    var version = await Task.Run(() => { return MuseScoreManager.Version(); });
                     _sheetMusicRenderer?.InitAsync(localPath);
                 }
                 catch

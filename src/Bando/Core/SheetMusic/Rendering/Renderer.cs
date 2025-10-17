@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Bando.Controls;
 namespace Bando.Core.SheetMusic.Rendering;
 public class SheetMusicRenderer
@@ -16,7 +19,6 @@ public class SheetMusicRenderer
     private CancellationTokenSource _renderCancellationToken = new();
     private List<string> _svgs = new();
     private CancellationTokenSource? _boundsChangedCts;
-    private const string SvgNamespace = "http://www.w3.org/2000/svg";
     private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(150);
 
     public SheetMusicRenderer(Sheet sheetControl)
@@ -57,11 +59,72 @@ public class SheetMusicRenderer
             }
         }
     }
+    private Dictionary<string, (int pageIndex, NoteLogicalSvgGroup group)> _noteCache = new();
+    private HashSet<string> _currentlyHighlightedNotes = new();
+    public async void MidiNoteChanged(double ms)
+    {
+        if (_svgs.Count == 0) return;
+        var noteAt = _verovio.ElementsAtTime(ms);
+        if (noteAt is null) return;
+        var result = JsonSerializer.Deserialize(noteAt, VerovioJsonContext.Default.VerovioElementAtTimeModel);
+        if (result is null) return;
+        var newNotes = result.notes.ToHashSet();
+        var toUnhighlight = _currentlyHighlightedNotes.Except(newNotes).ToList();
+        var toHighlight = newNotes.Except(_currentlyHighlightedNotes).ToList();
+        if (toUnhighlight.Count == 0 && toHighlight.Count == 0) return;
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            foreach (var noteId in toUnhighlight)
+            {
+                if (_noteCache.TryGetValue(noteId, out var cached))
+                {
+                    cached.group.SetHighlighted(false);
+                }
+                _currentlyHighlightedNotes.Remove(noteId);
+            }
+            foreach (var noteId in toHighlight)
+            {
+                var noteGroup = GetOrCacheNoteGroup(noteId, result.page - 1);
+                if (noteGroup != null)
+                {
+                    noteGroup.SetHighlighted(true);
+                    _currentlyHighlightedNotes.Add(noteId);
+                }
+            }
+        });
+    }
 
+    private NoteLogicalSvgGroup? GetOrCacheNoteGroup(string noteId, int pageIndex)
+    {
+        if (_noteCache.TryGetValue(noteId, out var cached))
+        {
+            return cached.group;
+        }
 
+        var page = _sheetControl.Children[pageIndex] as PageCanvas;
+        if (page is null) return null;
+
+        var noteGroup = page.GetVisualDescendants()
+            .OfType<NoteLogicalSvgGroup>()
+            .FirstOrDefault(p => p.NoteId == noteId);
+
+        if (noteGroup != null)
+        {
+            _noteCache[noteId] = (pageIndex, noteGroup);
+        }
+
+        return noteGroup;
+    }
+
+    public void ClearCache()
+    {
+        _noteCache.Clear();
+        _currentlyHighlightedNotes.Clear();
+    }
     public async void InitAsync(string source)
     {
         CancelRenders();
+        ClearCache();
         await Task.Run(async () =>
         {
             _svgs = new();
@@ -80,38 +143,49 @@ public class SheetMusicRenderer
         RenderAll();
     }
 
-    public void RenderPageAsync(int pageIndex, CancellationToken ctx)
-    {
-        var renderer = new VerovioSvgRenderer();
-        var dom = renderer.Load(_svgs[pageIndex]);
-        var canvas = (_sheetControl.Children[pageIndex] as PageCanvas);
-        if (canvas is null) return;
-        var aspectRatio = renderer.Width / renderer.Height;
-        var targetHeight = canvas.Bounds.Width / aspectRatio;
-        canvas.Height = targetHeight;
-        var scaleX = canvas.Bounds.Width / renderer.Width;
-        var scaleY = targetHeight / renderer.Height;
-        var group = dom[0] as LogicalSvgGroup;
-        if (group is null) return;
-        var transformGroup = (TransformGroup?)group.RenderTransform;
-        transformGroup?.Children.Add(new ScaleTransform(scaleX, scaleY));
-        canvas?.Children.Add(group);
-
-        canvas!.OriginalSvgHeight = renderer.Height;
-        canvas!.OriginalSvgWidth = renderer.Width;
-    }
-
     public void RenderAll()
     {
         CancelRenders();
         for (int i = 0; i < _svgs.Count; i++)
         {
             var capture = i;
-            RenderPageAsync(i, _renderCancellationToken.Token);
+            _ = RenderPageAsync(capture, _renderCancellationToken.Token);
         }
-        Console.WriteLine("render for all pages complete");
     }
 
+    public async Task RenderPageAsync(int pageIndex, CancellationToken ctx)
+    {
+        try
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (ctx.IsCancellationRequested) return;
+                var renderer = new VerovioSvgRenderer();
+                var dom = renderer.Load(_svgs[pageIndex]);
+                var canvas = _sheetControl.Children[pageIndex] as PageCanvas;
+                if (canvas is null) return;
+                var aspectRatio = renderer.Width / renderer.Height;
+                var targetHeight = canvas.Bounds.Width / aspectRatio;
+                canvas.Height = targetHeight;
+
+                var scaleX = canvas.Bounds.Width / renderer.Width;
+                var scaleY = targetHeight / renderer.Height;
+
+                var group = dom[0] as LogicalSvgGroup;
+                if (group is null) return;
+                var transformGroup = (TransformGroup?)group.RenderTransform;
+                transformGroup?.Children.Add(new ScaleTransform(scaleX, scaleY));
+                canvas.Children.Add(group);
+                canvas.OriginalSvgHeight = renderer.Height;
+                canvas.OriginalSvgWidth = renderer.Width;
+
+            }, DispatcherPriority.Background, ctx);
+        }
+        catch (OperationCanceledException)
+        {
+            // Render was cancelled
+        }
+    }
     private void CancelRenders()
     {
         _renderCancellationToken.Cancel();

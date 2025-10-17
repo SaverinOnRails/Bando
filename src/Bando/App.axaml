@@ -13,5 +13,6 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Bando/Styles/PianoKeyboard.axaml" />
+        <StyleInclude Source="avares://Bando/Styles/Sheet.axaml" />
     </Application.Styles>
 </Application>
