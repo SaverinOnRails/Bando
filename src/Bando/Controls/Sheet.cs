@@ -14,7 +14,6 @@ public class Sheet : StackPanel
         Children.Clear();
     }
 
-    //Purge should be called before this
     public void SetPageCount(int count)
     {
         for (int i = 0; i < count; i++)
@@ -22,6 +21,8 @@ public class Sheet : StackPanel
             Children.Add(new PageCanvas()
             {
                 HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch,
+                Height = 1000,
+                Index = i,
             });
         }
     }
@@ -31,4 +32,5 @@ public class PageCanvas : Canvas
 {
     public double? OriginalSvgHeight { get; set; } = null;
     public double? OriginalSvgWidth { get; set; } = null;
+    public int Index { get; set; }
 }

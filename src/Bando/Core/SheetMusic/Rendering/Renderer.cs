@@ -19,6 +19,9 @@ public class SheetMusicRenderer
     private CancellationTokenSource _renderCancellationToken = new();
     private List<string> _svgs = new();
     private CancellationTokenSource? _boundsChangedCts;
+    private Dictionary<int, LogicalSvgGroup>? _domTree = new();
+    private Dictionary<string, NoteLogicalSvgGroup> _noteCache = new();
+    private HashSet<string> _currentlyHighlightedNotes = new();
     private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(150);
 
     public SheetMusicRenderer(Sheet sheetControl)
@@ -59,8 +62,6 @@ public class SheetMusicRenderer
             }
         }
     }
-    private Dictionary<string, (int pageIndex, NoteLogicalSvgGroup group)> _noteCache = new();
-    private HashSet<string> _currentlyHighlightedNotes = new();
     public async void MidiNoteChanged(double ms)
     {
         if (_svgs.Count == 0) return;
@@ -78,7 +79,7 @@ public class SheetMusicRenderer
             {
                 if (_noteCache.TryGetValue(noteId, out var cached))
                 {
-                    cached.group.SetHighlighted(false);
+                    cached.SetHighlighted(false);
                 }
                 _currentlyHighlightedNotes.Remove(noteId);
             }
@@ -98,7 +99,7 @@ public class SheetMusicRenderer
     {
         if (_noteCache.TryGetValue(noteId, out var cached))
         {
-            return cached.group;
+            return cached;
         }
 
         var page = _sheetControl.Children[pageIndex] as PageCanvas;
@@ -110,7 +111,7 @@ public class SheetMusicRenderer
 
         if (noteGroup != null)
         {
-            _noteCache[noteId] = (pageIndex, noteGroup);
+            _noteCache[noteId] = noteGroup;
         }
 
         return noteGroup;
@@ -149,7 +150,7 @@ public class SheetMusicRenderer
         for (int i = 0; i < _svgs.Count; i++)
         {
             var capture = i;
-            _ = RenderPageAsync(capture, _renderCancellationToken.Token);
+            _ = RenderPageAsync(capture, _renderCancellationToken.Token); //only render first two pages initially
         }
     }
 

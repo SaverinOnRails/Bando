@@ -65,27 +65,46 @@ internal class VerovioSvgRenderer
         _renderDom.Add(fragmentContainer);
     }
 
-    private Control RenderGroup(SvgGroup g)
+    private Control RenderGroup(SvgGroup g, LogicalSvgGroup? parent = null)
     {
         var transformGroup = new TransformGroup();
         LogicalSvgGroup group;
-        if (g.GetClasses().Contains("note"))
+        if (parent is null)
         {
-            group = new NoteLogicalSvgGroup() { NoteId = g.ID };
+
+            if (g.GetClasses().Contains("note"))
+            {
+                group = new NoteLogicalSvgGroup() { NoteId = g.ID };
+            }
+            else
+            {
+                group = new LogicalSvgGroup();
+            }
+            group.Id = g.ID;
+            group.Class = g.GetClasses();
+            group.RenderTransform = g.ToAvaloniaTransformGroup();
         }
         else
         {
-            group = new LogicalSvgGroup();
+            group = parent;
         }
-        group.Id = g.ID;
-        group.Class = g.GetClasses();
-        group.RenderTransform = g.ToAvaloniaTransformGroup();
-
         foreach (var elem in g.Children)
         {
             if (elem is SvgGroup _g)
             {
-                group.Children.Add(RenderGroup(_g));
+                if (_g.Children.Count > 0)
+                {
+                    //determine if to flatten children
+                    bool needsOwnContainer = _g.GetClasses().Contains("note") || (_g.Transforms is not null && _g.Transforms?.Count != 0);
+                    Console.WriteLine(needsOwnContainer);
+                    if (needsOwnContainer)
+                    {
+                        //will create svg group and we add it here
+                        group.Children.Add(RenderGroup(_g));
+                    }
+                    //flatten, add its children directly to this group
+                    else _ = RenderGroup(_g, group);
+                }
             }
             else if (elem is SvgPath _path)
             {
@@ -94,7 +113,6 @@ internal class VerovioSvgRenderer
             else if (elem is SvgText _text) { } //fuck this for now
             else if (elem is SvgUse _use)
             {
-                //will always be a path group
                 var dictEnry = _use.ReferencedElement.OriginalString.TrimStart('#');
                 Control? path;
                 if (_globalDefs.TryGetValue(dictEnry, out path) && path is Path p)
@@ -118,9 +136,7 @@ internal class VerovioSvgRenderer
             }
             else if (elem is SvgPolygon _polygon)
             {
-                LogicalSvgGroup polyGroup = new();
-                polyGroup.Children.Add(_polygon.ToAvaloniaPolygon());
-                group.Children.Add(polyGroup);
+                group.Children.Add(_polygon.ToAvaloniaPolygon());
             }
             else if (elem is SvgPolyline _polyline)
             {
@@ -134,12 +150,6 @@ internal class VerovioSvgRenderer
             {
                 group.Children.Add(_rect.ToAvaloniaRectangle());
             }
-            // else
-            // {
-            //     Console.WriteLine(elem.GetXML());
-            //     Console.WriteLine();
-            //     Console.WriteLine();
-            // }
             else throw new UnhandledElementException(elem);
         }
         return group;
