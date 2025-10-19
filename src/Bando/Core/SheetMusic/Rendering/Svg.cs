@@ -1,4 +1,3 @@
-// Attempt at a very basic svg renderer, good enough for verovio(i hope) and nothing else
 namespace Bando.Core.SheetMusic.Rendering;
 using System;
 using System.Collections.Generic;
@@ -14,9 +13,11 @@ using Svg.Transforms;
 internal class VerovioSvgRenderer
 {
     private Dictionary<string, Control> _globalDefs = new();
+    private DrawingGroup _drawings = new();
     private List<Control> _renderDom = new();
     public double Height { get; private set; }
     public double Width { get; private set; }
+
     public List<Control> Load(string svg)
     {
         SvgDocument svgDoc = SvgDocument.FromSvg<SvgDocument>(svg);
@@ -96,7 +97,6 @@ internal class VerovioSvgRenderer
                 {
                     //determine if to flatten children
                     bool needsOwnContainer = _g.GetClasses().Contains("note") || (_g.Transforms is not null && _g.Transforms?.Count != 0);
-                    Console.WriteLine(needsOwnContainer);
                     if (needsOwnContainer)
                     {
                         //will create svg group and we add it here
