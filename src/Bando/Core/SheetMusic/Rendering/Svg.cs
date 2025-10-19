@@ -45,11 +45,11 @@ internal class VerovioSvgRenderer
     private void HandleSvgFragment(SvgFragment frag)
     {
         var fragmentContainer = new LogicalSvgGroup();
+        var fragmentDrawingGroup = new DrawingGroup();
         if (frag.ViewBox != SvgViewBox.Empty)
         {
             double scaleX = Width / frag.ViewBox.Width;
             double scaleY = Height / frag.ViewBox.Height;
-
             var transformGroup = new TransformGroup();
             transformGroup.Children.Add(new ScaleTransform(scaleX, scaleY));
             fragmentContainer.RenderTransform = transformGroup;
@@ -58,32 +58,30 @@ internal class VerovioSvgRenderer
         {
             if (elem is SvgGroup g)
             {
-                fragmentContainer.Children.Add(RenderGroup(g));
+                fragmentDrawingGroup.Children.Add(RenderGroup(g));
             }
             else throw new UnhandledElementException(elem);
         }
-
+        fragmentContainer.Children.Add(new Image()
+        {
+            Source = new DrawingImage(fragmentDrawingGroup),
+            Stretch = Stretch.None,
+        });
         _renderDom.Add(fragmentContainer);
     }
 
-    private Control RenderGroup(SvgGroup g, LogicalSvgGroup? parent = null)
+    private DrawingGroup RenderGroup(SvgGroup g, DrawingGroup? parent = null)
     {
         var transformGroup = new TransformGroup();
-        LogicalSvgGroup group;
+        DrawingGroup group;
         if (parent is null)
         {
-
-            if (g.GetClasses().Contains("note"))
+            group = new();
+            if (g.Transforms is not null)
             {
-                group = new NoteLogicalSvgGroup() { NoteId = g.ID };
+                Console.WriteLine($"located a transfrom for this with value {g.Transforms.ToString()}");
             }
-            else
-            {
-                group = new LogicalSvgGroup();
-            }
-            group.Id = g.ID;
-            group.Class = g.GetClasses();
-            group.RenderTransform = g.ToAvaloniaTransformGroup();
+            group.Transform = g.ToAvaloniaTransformGroup();
         }
         else
         {
@@ -95,60 +93,57 @@ internal class VerovioSvgRenderer
             {
                 if (_g.Children.Count > 0)
                 {
-                    //determine if to flatten children
                     bool needsOwnContainer = _g.GetClasses().Contains("note") || (_g.Transforms is not null && _g.Transforms?.Count != 0);
                     if (needsOwnContainer)
                     {
-                        //will create svg group and we add it here
                         group.Children.Add(RenderGroup(_g));
                     }
-                    //flatten, add its children directly to this group
                     else _ = RenderGroup(_g, group);
                 }
             }
             else if (elem is SvgPath _path)
             {
-                group.Children.Add(_path.ToAvaloniaPath());
+                group.Children.Add(_path.ToAvaloniaDrawing());
             }
             else if (elem is SvgText _text) { } //fuck this for now
             else if (elem is SvgUse _use)
             {
-                var dictEnry = _use.ReferencedElement.OriginalString.TrimStart('#');
-                Control? path;
-                if (_globalDefs.TryGetValue(dictEnry, out path) && path is Path p)
-                {
-                    TransformGroup totalTransformGroup = new();
-                    LogicalSvgGroup useGroup = new();
-                    useGroup.Children.Add(p.DeepCopy());
-                    var originalPathTransform = p.RenderTransform;
-                    //apply the original transformation first
-                    if (originalPathTransform is not null)
-                    {
-                        totalTransformGroup.Children.Add((Transform)originalPathTransform);
-                    }
-                    foreach (var t in _use.ToAvaloniaTransformGroup().Children)
-                    {
-                        totalTransformGroup.Children.Add(t);
-                    }
-                    useGroup.RenderTransform = totalTransformGroup;
-                    group.Children.Add(useGroup);
-                }
+                // var dictEnry = _use.ReferencedElement.OriginalString.TrimStart('#');
+                // Control? path;
+                // if (_globalDefs.TryGetValue(dictEnry, out path) && path is Path p)
+                // {
+                //     TransformGroup totalTransformGroup = new();
+                //     LogicalSvgGroup useGroup = new();
+                //     useGroup.Children.Add(p.DeepCopy());
+                //     var originalPathTransform = p.RenderTransform;
+                //     //apply the original transformation first
+                //     if (originalPathTransform is not null)
+                //     {
+                //         totalTransformGroup.Children.Add((Transform)originalPathTransform);
+                //     }
+                //     foreach (var t in _use.ToAvaloniaTransformGroup().Children)
+                //     {
+                //         totalTransformGroup.Children.Add(t);
+                //     }
+                //     useGroup.RenderTransform = totalTransformGroup;
+                //     group.Children.Add(useGroup);
+                // }
             }
             else if (elem is SvgPolygon _polygon)
             {
-                group.Children.Add(_polygon.ToAvaloniaPolygon());
+                group.Children.Add(_polygon.ToAvaloniaDrawing());
             }
             else if (elem is SvgPolyline _polyline)
             {
-                group.Children.Add(_polyline.ToAvaloniaPolyline());
+                group.Children.Add(_polyline.ToAvaloniaDrawing());
             }
             else if (elem is SvgEllipse _ellipse)
             {
-                group.Children.Add(_ellipse.ToAvaloniaEllipse());
+                group.Children.Add(_ellipse.ToAvaloniaDrawing());
             }
             else if (elem is SvgRectangle _rect)
             {
-                group.Children.Add(_rect.ToAvaloniaRectangle());
+                group.Children.Add(_rect.ToAvaloniaDrawing());
             }
             else throw new UnhandledElementException(elem);
         }
@@ -282,6 +277,28 @@ public static class SvgExtensions
         return path;
     }
 
+    public static Avalonia.Media.GeometryDrawing ToAvaloniaDrawing(this SvgPath self)
+    {
+        string pathData = self.PathData?.ToString() ?? string.Empty;
+        var geometry = Geometry.Parse(pathData);
+        var transform = self.ToAvaloniaTransformGroup();
+        geometry = geometry.Clone();
+        geometry.Transform = transform;
+        var drawing = new GeometryDrawing
+        {
+            Geometry = geometry,
+            Brush = Brushes.Black,
+            Pen = new Pen
+            {
+                Brush = Brushes.Black,
+                Thickness = (double)self.StrokeWidth.Value,
+                LineCap = self.StrokeLineCap.ToAvaloniaPenLineCap(),
+                LineJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin()
+            }
+        };
+
+        return drawing;
+    }
     public static Avalonia.Controls.Shapes.Path DeepCopy(this Path self)
     {
         return new()
@@ -296,54 +313,32 @@ public static class SvgExtensions
         };
     }
 
-    public static Avalonia.Controls.Shapes.Ellipse ToAvaloniaEllipse(this SvgEllipse self)
+    public static Avalonia.Media.GeometryDrawing ToAvaloniaDrawing(this SvgEllipse self)
     {
-        var ellipse = new Ellipse()
+        var ellipseGeometry = new EllipseGeometry(
+            new Rect(
+                self.CenterX - self.RadiusX,
+                self.CenterY - self.RadiusY,
+                self.RadiusX * 2,
+                self.RadiusY * 2
+            )
+        );
+
+        var drawing = new GeometryDrawing
         {
-            Width = self.RadiusX * 2,
-            Height = self.RadiusY * 2,
-            Fill = Brushes.Black,
-            Stroke = Brushes.Black,
-            Opacity = 1.0,
+            Geometry = ellipseGeometry,
+            Brush = Brushes.Black,
+            Pen = new Pen
+            {
+                Brush = Brushes.Black,
+                Thickness = 1.0
+            }
         };
-        Canvas.SetLeft(ellipse, self.CenterX - self.RadiusX);
-        Canvas.SetTop(ellipse, self.CenterY - self.RadiusY);
-        return ellipse;
+        return drawing;
     }
-    public static Avalonia.Controls.Shapes.Polygon ToAvaloniaPolygon(this SvgPolygon self)
+    public static Avalonia.Media.GeometryDrawing ToAvaloniaDrawing(this SvgPolygon self)
     {
-        var polygon = new Polygon()
-        {
-            Fill = Brushes.Black,
-            Stroke = Brushes.Black,
-            Opacity = 1.0,
-        };
-        var points = new Points();
-
-        for (int i = 0; i < self.Points.Count - 1; i += 2)
-        {
-            double x = (double)self.Points[i].Value;
-            double y = (double)self.Points[i + 1].Value;
-            points.Add(new Point(x, y));
-        }
-        polygon.Points = points;
-        return polygon;
-    }
-
-    public static Avalonia.Controls.Shapes.Polyline ToAvaloniaPolyline(this SvgPolyline self)
-    {
-        var polyline = new Polyline
-        {
-            Fill = Brushes.Transparent,
-            Stroke = Brushes.Black,
-            StrokeThickness = (float)self.StrokeWidth,
-            Opacity = self.StrokeOpacity,
-            StrokeLineCap = self.StrokeLineCap.ToAvaloniaPenLineCap(),
-            StrokeJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin(),
-        };
-
-        var points = new Points();
-
+        var points = new List<Point>();
         for (int i = 0; i < self.Points.Count - 1; i += 2)
         {
             double x = (double)self.Points[i].Value;
@@ -351,25 +346,69 @@ public static class SvgExtensions
             points.Add(new Point(x, y));
         }
 
-        polyline.Points = points;
-        return polyline;
-    }
+        var polylineGeometry = new PolylineGeometry(points, true);
 
-    public static Avalonia.Controls.Shapes.Rectangle ToAvaloniaRectangle(this SvgRectangle self)
-    {
-        var rect = new Rectangle
+        var drawing = new GeometryDrawing
         {
-            Width = (double)self.Width.Value,
-            Height = (double)self.Height.Value,
-            RadiusX = ((double)self.CornerRadiusX.Value),
-            RadiusY = (double)(self.CornerRadiusY.Value),
-            Fill = Brushes.Transparent,
-            Stroke = Brushes.Black,
-            StrokeThickness = (float)self.StrokeWidth,
-            Opacity = self.StrokeOpacity,
+            Geometry = polylineGeometry,
+            Brush = Brushes.Black,
+            Pen = new Pen
+            {
+                Brush = Brushes.Black,
+                Thickness = 1.0
+            }
         };
-        Canvas.SetLeft(rect, (double)self.X.Value);
-        Canvas.SetTop(rect, (double)self.Y.Value);
-        return rect;
+
+        return drawing;
+    }
+    public static Avalonia.Media.GeometryDrawing ToAvaloniaDrawing(this SvgPolyline self)
+    {
+        var points = new List<Point>();
+        for (int i = 0; i < self.Points.Count - 1; i += 2)
+        {
+            double x = (double)self.Points[i].Value;
+            double y = (double)self.Points[i + 1].Value;
+            points.Add(new Point(x, y));
+        }
+        var polylineGeometry = new PolylineGeometry(points, false);
+        var drawing = new GeometryDrawing
+        {
+            Geometry = polylineGeometry,
+            Brush = Brushes.Transparent,
+            Pen = new Pen
+            {
+                Brush = new SolidColorBrush(Colors.Black, self.StrokeOpacity),
+                Thickness = (double)self.StrokeWidth,
+                LineCap = self.StrokeLineCap.ToAvaloniaPenLineCap(),
+                LineJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin()
+            }
+        };
+
+        return drawing;
+    }
+    public static Avalonia.Media.GeometryDrawing ToAvaloniaDrawing(this SvgRectangle self)
+    {
+        var rectGeometry = new RectangleGeometry(
+            new Rect(
+                (double)self.X.Value,
+                (double)self.Y.Value,
+                (double)self.Width.Value,
+                (double)self.Height.Value
+            ),
+            (double)self.CornerRadiusX.Value,
+            (double)self.CornerRadiusY.Value
+        );
+
+        var drawing = new GeometryDrawing
+        {
+            Geometry = rectGeometry,
+            Brush = Brushes.Transparent,
+            Pen = new Pen
+            {
+                Brush = new SolidColorBrush(Colors.Black, self.StrokeOpacity),
+                Thickness = (double)self.StrokeWidth,
+            }
+        };
+        return drawing;
     }
 }
