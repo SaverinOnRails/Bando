@@ -12,8 +12,9 @@ using Svg.Transforms;
 
 internal class VerovioSvgRenderer
 {
-    private Dictionary<string, Control> _globalDefs = new();
+    private Dictionary<string, PathData> _globalDefs = new();
     private DrawingGroup _drawings = new();
+    private Canvas _notes = new();
     private List<Control> _renderDom = new();
     public double Height { get; private set; }
     public double Width { get; private set; }
@@ -27,7 +28,7 @@ internal class VerovioSvgRenderer
         {
             if (elem is SvgDefinitionList defs)
             {
-                HandlDefs(defs);
+                HandleDefs(defs);
             }
             else if (elem is SvgDescription) { }
             else if (elem is SvgUnknownElement unknown)
@@ -45,112 +46,94 @@ internal class VerovioSvgRenderer
     private void HandleSvgFragment(SvgFragment frag)
     {
         var fragmentContainer = new LogicalSvgGroup();
-        var fragmentDrawingGroup = new DrawingGroup();
         if (frag.ViewBox != SvgViewBox.Empty)
         {
             double scaleX = Width / frag.ViewBox.Width;
             double scaleY = Height / frag.ViewBox.Height;
-            var transformGroup = new TransformGroup();
-            transformGroup.Children.Add(new ScaleTransform(scaleX, scaleY));
-            fragmentContainer.RenderTransform = transformGroup;
+            var containerTransform = new TransformGroup();
+            containerTransform.Children.Add(new ScaleTransform(scaleX, scaleY));
+            fragmentContainer.RenderTransform = containerTransform;
         }
         foreach (var elem in frag.Children)
         {
             if (elem is SvgGroup g)
             {
-                fragmentDrawingGroup.Children.Add(RenderGroup(g));
+                RenderGroup(g);
             }
             else throw new UnhandledElementException(elem);
         }
-        fragmentContainer.Children.Add(new Image()
+        var drawingimage = new DrawingImage(_drawings);
+        var image = new Image()
         {
-            Source = new DrawingImage(fragmentDrawingGroup),
+            Source = new DrawingImage(_drawings),
+            Width = frag.ViewBox.Width,
+            Height = frag.ViewBox.Height,
             Stretch = Stretch.None,
-        });
+        };
+        _notes.Width = frag.ViewBox.Width;
+        _notes.Height = frag.ViewBox.Height;
+        fragmentContainer.Children.Add(_notes);
+        fragmentContainer.Children.Add(image);
         _renderDom.Add(fragmentContainer);
     }
-
-    private DrawingGroup RenderGroup(SvgGroup g, DrawingGroup? parent = null)
+    private void RenderGroup(SvgGroup g)
     {
-        var transformGroup = new TransformGroup();
-        DrawingGroup group;
-        if (parent is null)
-        {
-            group = new();
-            if (g.Transforms is not null)
-            {
-                Console.WriteLine($"located a transfrom for this with value {g.Transforms.ToString()}");
-            }
-            group.Transform = g.ToAvaloniaTransformGroup();
-        }
-        else
-        {
-            group = parent;
-        }
         foreach (var elem in g.Children)
         {
             if (elem is SvgGroup _g)
             {
                 if (_g.Children.Count > 0)
                 {
-                    bool needsOwnContainer = _g.GetClasses().Contains("note") || (_g.Transforms is not null && _g.Transforms?.Count != 0);
-                    if (needsOwnContainer)
-                    {
-                        group.Children.Add(RenderGroup(_g));
-                    }
-                    else _ = RenderGroup(_g, group);
+                    RenderGroup(_g);
                 }
             }
             else if (elem is SvgPath _path)
             {
-                group.Children.Add(_path.ToAvaloniaDrawing());
+                _drawings.Children.Add(_path.ToAvaloniaDrawing());
             }
             else if (elem is SvgText _text) { } //fuck this for now
             else if (elem is SvgUse _use)
             {
-                // var dictEnry = _use.ReferencedElement.OriginalString.TrimStart('#');
-                // Control? path;
-                // if (_globalDefs.TryGetValue(dictEnry, out path) && path is Path p)
-                // {
-                //     TransformGroup totalTransformGroup = new();
-                //     LogicalSvgGroup useGroup = new();
-                //     useGroup.Children.Add(p.DeepCopy());
-                //     var originalPathTransform = p.RenderTransform;
-                //     //apply the original transformation first
-                //     if (originalPathTransform is not null)
-                //     {
-                //         totalTransformGroup.Children.Add((Transform)originalPathTransform);
-                //     }
-                //     foreach (var t in _use.ToAvaloniaTransformGroup().Children)
-                //     {
-                //         totalTransformGroup.Children.Add(t);
-                //     }
-                //     useGroup.RenderTransform = totalTransformGroup;
-                //     group.Children.Add(useGroup);
-                // }
+                var dictEnry = _use.ReferencedElement.OriginalString.TrimStart('#');
+                if (_globalDefs.TryGetValue(dictEnry, out var path))
+                {
+                    TransformGroup totalTransformGroup = new();
+                    var p = path.ToAvaloniaControl();
+                    var originalPathTransform = path.Transform;
+                    //apply the original transformation first
+                    if (originalPathTransform is not null)
+                    {
+                        totalTransformGroup.Children.Add((Transform)originalPathTransform);
+                    }
+                    foreach (var t in _use.ToAvaloniaTransformGroup().Children)
+                    {
+                        totalTransformGroup.Children.Add(t);
+                    }
+                    p.RenderTransform = totalTransformGroup;
+                    _notes.Children.Add(p);
+                }
             }
             else if (elem is SvgPolygon _polygon)
             {
-                group.Children.Add(_polygon.ToAvaloniaDrawing());
+                _drawings.Children.Add(_polygon.ToAvaloniaDrawing());
             }
             else if (elem is SvgPolyline _polyline)
             {
-                group.Children.Add(_polyline.ToAvaloniaDrawing());
+                _drawings.Children.Add(_polyline.ToAvaloniaDrawing());
             }
             else if (elem is SvgEllipse _ellipse)
             {
-                group.Children.Add(_ellipse.ToAvaloniaDrawing());
+                _drawings.Children.Add(_ellipse.ToAvaloniaDrawing());
             }
             else if (elem is SvgRectangle _rect)
             {
-                group.Children.Add(_rect.ToAvaloniaDrawing());
+                _drawings.Children.Add(_rect.ToAvaloniaDrawing());
             }
             else throw new UnhandledElementException(elem);
         }
-        return group;
     }
 
-    private void HandlDefs(SvgDefinitionList defs)
+    private void HandleDefs(SvgDefinitionList defs)
     {
         foreach (var elem in defs.Children)
         {
@@ -161,7 +144,11 @@ internal class VerovioSvgRenderer
                 {
                     if (path is SvgPath p)
                     {
-                        _globalDefs[groupId] = p.ToAvaloniaPath();
+                        _globalDefs[groupId] = new()
+                        {
+                            Data = p.PathData.ToString(),
+                            Transform = p.ToAvaloniaTransformGroup(),
+                        };
                     }
                     else throw new UnhandledElementException(elem);
                 }
@@ -205,6 +192,26 @@ public class NoteLogicalSvgGroup : LogicalSvgGroup
     public void SetHighlighted(bool highlighted)
     {
         PseudoClasses.Set(":highlighted", highlighted);
+    }
+}
+
+internal record PathData
+{
+    public required string Data { get; set; }
+    public required Transform Transform { get; set; }
+    public Path ToAvaloniaControl()
+    {
+        var path = new Avalonia.Controls.Shapes.Path();
+        var transformGroup = new TransformGroup();
+        transformGroup.Children.Add(Transform);
+        string pathData = Data ?? string.Empty;
+        var geometry = Geometry.Parse(pathData);
+        path.Stretch = Stretch.None;
+        path.Data = geometry;
+        path.StrokeLineCap = PenLineCap.Flat;
+        path.StrokeJoin = 0;
+        path.StrokeThickness = 8;
+        return path;
     }
 }
 
@@ -267,8 +274,6 @@ public static class SvgExtensions
         path.RenderTransform = self.ToAvaloniaTransformGroup();
         string pathData = self.PathData?.ToString() ?? string.Empty;
         var geometry = Geometry.Parse(pathData);
-        // path.Fill = Brushes.Black;
-        // path.Stroke = Brushes.Black;
         path.Stretch = Stretch.None;
         path.Data = geometry;
         path.StrokeLineCap = self.StrokeLineCap.ToAvaloniaPenLineCap();
@@ -281,9 +286,6 @@ public static class SvgExtensions
     {
         string pathData = self.PathData?.ToString() ?? string.Empty;
         var geometry = Geometry.Parse(pathData);
-        var transform = self.ToAvaloniaTransformGroup();
-        geometry = geometry.Clone();
-        geometry.Transform = transform;
         var drawing = new GeometryDrawing
         {
             Geometry = geometry,
@@ -323,7 +325,6 @@ public static class SvgExtensions
                 self.RadiusY * 2
             )
         );
-
         var drawing = new GeometryDrawing
         {
             Geometry = ellipseGeometry,
@@ -347,7 +348,6 @@ public static class SvgExtensions
         }
 
         var polylineGeometry = new PolylineGeometry(points, true);
-
         var drawing = new GeometryDrawing
         {
             Geometry = polylineGeometry,
@@ -398,7 +398,6 @@ public static class SvgExtensions
             (double)self.CornerRadiusX.Value,
             (double)self.CornerRadiusY.Value
         );
-
         var drawing = new GeometryDrawing
         {
             Geometry = rectGeometry,

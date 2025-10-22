@@ -168,7 +168,6 @@ public class SheetMusicRenderer
                 var aspectRatio = renderer.Width / renderer.Height;
                 var targetHeight = canvas.Bounds.Width / aspectRatio;
                 canvas.Height = targetHeight;
-
                 var scaleX = canvas.Bounds.Width / renderer.Width;
                 var scaleY = targetHeight / renderer.Height;
 

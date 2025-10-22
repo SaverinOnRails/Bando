@@ -318,6 +318,7 @@ public class Verovio : IDisposable
         SetOption("scaleToPageSize", "true");
         SetOption("svgViewBox", "true");
         SetOption("adjustPageHeight", "true");
+
     }
 
     // For setting multiple options at once (more efficient)
