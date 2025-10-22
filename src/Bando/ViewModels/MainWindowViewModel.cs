@@ -72,8 +72,6 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         _midiPlayer.TurnOffAllNotes += TurnOffAllNotes;
     }
 
-
-
     private void TurnOffAllNotes(object? sender, EventArgs e)
     {
         if (Keyboard is null) return;

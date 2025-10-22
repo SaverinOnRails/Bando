@@ -27,13 +27,10 @@ public class Sheet : StackPanel
     }
 }
 
-public class PageCanvas : Canvas
+public class PageCanvas : Viewbox
 {
-    public double? OriginalSvgHeight { get; set; } = null;
-    public double? OriginalSvgWidth { get; set; } = null;
     public int Index { get; set; }
     public PageCanvas()
     {
-        Margin = new(10);
     }
 }

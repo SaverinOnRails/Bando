@@ -8,21 +8,4 @@
         </Border>
     </Design.PreviewWith>
 
-    <Style Selector="Path">
-        <Setter Property="Fill" Value="Black" />
-        <Setter Property="Stroke" Value="Black" />
-    </Style>
-
-
-    <Style Selector="r|NoteLogicalSvgGroup:highlighted Path">
-        <Setter Property="Fill" Value="Red" />
-        <Setter Property="Stroke" Value="Red" />
-        <Setter Property="StrokeThickness" Value="2" />
-        <Setter Property="Effect">
-            <DropShadowEffect
-                BlurRadius="400"
-                Opacity="1"
-                Color="Red" />
-        </Setter>
-    </Style>
 </Styles>
