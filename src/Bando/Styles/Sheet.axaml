@@ -8,4 +8,29 @@
         </Border>
     </Design.PreviewWith>
 
+
+    <Style Selector="r|NotePath">
+        <Setter Property="Fill">
+            <Setter.Value>
+                <SolidColorBrush Color="#e5e5e5" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Stroke">
+            <Setter.Value>
+                <SolidColorBrush Color="#e5e5e5" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style Selector="r|NotePath:highlighted">
+        <Setter Property="Fill" Value="Red" />
+        <Setter Property="Stroke" Value="Red" />
+        <Setter Property="StrokeThickness" Value="2" />
+        <!-- <Setter Property="Effect"> -->
+        <!--  <DropShadowEffect  -->
+        <!--  BlurRadius="400"  -->
+        <!--  Opacity="1"  -->
+        <!--  Color="Red" />  -->
+        <!-- </Setter> -->
+    </Style>
+
 </Styles>

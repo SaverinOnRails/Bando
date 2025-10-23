@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Shapes;
 using Avalonia.Media;
 using Svg;
@@ -51,7 +53,7 @@ internal class VerovioSvgRenderer
         {
             if (elem is SvgGroup group)
             {
-                HandleGroup(group);
+                HandleGroup(group, null);
             }
         }
         // var image = new Image()
@@ -67,14 +69,15 @@ internal class VerovioSvgRenderer
         _mainCanvas.Children.Add(_notes);
     }
 
-    private void HandleGroup(SvgGroup group)
+    private void HandleGroup(SvgGroup group, string? noteid)
     {
         foreach (var elem in group.Children)
         {
             switch (elem)
             {
                 case SvgGroup _g:
-                    HandleGroup(_g);
+                    var maybe_noteid = noteid ?? (_g.GetClasses().Contains("note") ? _g.ID : null);
+                    HandleGroup(_g, maybe_noteid);
                     break;
                 case SvgPath _path:
                     _notes.Children.Add(_path.ToAvaloniaPath());
@@ -87,6 +90,7 @@ internal class VerovioSvgRenderer
                         Canvas usegroup = new();
                         TransformGroup totalTransformGroup = new();
                         var p = path.ToAvaloniaControl();
+                        if (noteid is not null) p.NoteId = noteid;
                         var originalPathTransform = path.Transform;
                         //apply the original transformation first
                         if (originalPathTransform is not null)
@@ -130,13 +134,22 @@ internal class VerovioSvgRenderer
     }
 }
 
+[PseudoClasses(":highlighted")]
+internal class NotePath : Path
+{
+    public string NoteId { get; set; } = "";
+    public void SetHighlighted(bool highlighted)
+    {
+        PseudoClasses.Set(":highlighted", highlighted);
+    }
+}
 internal record PathDefinitionData
 {
     public required string PathData { get; set; }
     public required Transform Transform { get; set; }
-    public Path ToAvaloniaControl()
+    public NotePath ToAvaloniaControl()
     {
-        var path = new Avalonia.Controls.Shapes.Path();
+        var path = new NotePath();
         // var transformGroup = new TransformGroup();
         // transformGroup.Children.Add(Transform);
         string pathData = PathData ?? string.Empty;
@@ -146,8 +159,6 @@ internal record PathDefinitionData
         path.StrokeLineCap = PenLineCap.Flat;
         path.StrokeJoin = 0;
         path.StrokeThickness = 8;
-        path.Fill = Brushes.Black;
-        path.Stroke = Brushes.Black;
         return path;
     }
 }
@@ -183,10 +194,10 @@ internal static class SvgExtensions
         var drawing = new GeometryDrawing
         {
             Geometry = geometry,
-            Brush = Brushes.Black,
+            Brush = new SolidColorBrush(Color.Parse("#e5e5e5")),
             Pen = new Pen
             {
-                Brush = Brushes.Black,
+                Brush = new SolidColorBrush(Color.Parse("#e5e5e5")),
                 Thickness = (double)self.StrokeWidth.Value,
                 LineCap = self.StrokeLineCap.ToAvaloniaPenLineCap(),
                 LineJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin()
@@ -228,9 +239,16 @@ internal static class SvgExtensions
         path.StrokeLineCap = self.StrokeLineCap.ToAvaloniaPenLineCap();
         path.StrokeJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin();
         path.StrokeThickness = (double)self.StrokeWidth.Value;
-        path.Fill = Brushes.Black;
-        path.Stroke = Brushes.Black;
+        path.Fill = new SolidColorBrush(Color.Parse("#e5e5e5"));
+        path.Stroke = new SolidColorBrush(Color.Parse("#e5e5e5"));
         return path;
+    }
+
+    public static List<string> GetClasses(this SvgElement element)
+    {
+        if (element.CustomAttributes.TryGetValue("class", out var cls))
+            return cls.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        return new List<string>();
     }
 }
 

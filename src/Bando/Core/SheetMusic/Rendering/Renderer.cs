@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Avalonia.Controls;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Bando.Controls;
 namespace Bando.Core.SheetMusic.Rendering;
 public class SheetMusicRenderer
@@ -16,17 +17,18 @@ public class SheetMusicRenderer
     private CancellationTokenSource _renderCancellationToken = new();
     private List<string> _svgs = new();
     private CancellationTokenSource? _boundsChangedCts;
-    private HashSet<string> _currentlyHighlightedNotes = new();
     private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(150);
-
     public SheetMusicRenderer(Sheet sheetControl)
     {
         _sheetControl = sheetControl;
     }
 
+    private Dictionary<string, NotePath> _noteCache = new();
+    private HashSet<string> _currentlyHighlightedNotes = new();
     public async void MidiNoteChanged(double ms)
     {
     }
+
 
     public async void InitAsync(string source)
     {
