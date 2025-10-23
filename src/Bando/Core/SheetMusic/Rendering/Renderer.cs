@@ -23,8 +23,6 @@ public class SheetMusicRenderer
         _sheetControl = sheetControl;
     }
 
-    private Dictionary<string, NotePath> _noteCache = new();
-    private HashSet<string> _currentlyHighlightedNotes = new();
     public async void MidiNoteChanged(double ms)
     {
     }

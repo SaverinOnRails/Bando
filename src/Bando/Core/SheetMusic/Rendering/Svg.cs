@@ -194,10 +194,10 @@ internal static class SvgExtensions
         var drawing = new GeometryDrawing
         {
             Geometry = geometry,
-            Brush = new SolidColorBrush(Color.Parse("#e5e5e5")),
+            Brush = Brushes.Black,
             Pen = new Pen
             {
-                Brush = new SolidColorBrush(Color.Parse("#e5e5e5")),
+                Brush = Brushes.Black,
                 Thickness = (double)self.StrokeWidth.Value,
                 LineCap = self.StrokeLineCap.ToAvaloniaPenLineCap(),
                 LineJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin()
@@ -239,8 +239,8 @@ internal static class SvgExtensions
         path.StrokeLineCap = self.StrokeLineCap.ToAvaloniaPenLineCap();
         path.StrokeJoin = self.StrokeLineJoin.ToAvaloniaPenLineJoin();
         path.StrokeThickness = (double)self.StrokeWidth.Value;
-        path.Fill = new SolidColorBrush(Color.Parse("#e5e5e5"));
-        path.Stroke = new SolidColorBrush(Color.Parse("#e5e5e5"));
+        path.Fill = Brushes.Black;
+        path.Stroke = Brushes.Black;
         return path;
     }
 
