@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Bando.Controls;
 namespace Bando.Core.SheetMusic.Rendering;
 public class SheetMusicRenderer
@@ -16,8 +13,6 @@ public class SheetMusicRenderer
     private Sheet _sheetControl;
     private CancellationTokenSource _renderCancellationToken = new();
     private List<string> _svgs = new();
-    private CancellationTokenSource? _boundsChangedCts;
-    private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(150);
     public SheetMusicRenderer(Sheet sheetControl)
     {
         _sheetControl = sheetControl;

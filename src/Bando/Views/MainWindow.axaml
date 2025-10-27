@@ -17,7 +17,15 @@
         <vm:MainWindowViewModel />
     </Design.DataContext>
 
-    <Grid VerticalAlignment="Stretch" RowDefinitions="Auto,*,Auto">
+    <Window.KeyBindings>
+        <KeyBinding Command="{Binding TogglePausePlay}" Gesture="Space" />
+        <KeyBinding Command="{Binding SeekForward}" Gesture="Right" />
+        <KeyBinding Command="{Binding SeekBackward}" Gesture="Left" />
+        <KeyBinding Command="{Binding IncreaseTempo}" Gesture="Up" />
+        <KeyBinding Command="{Binding DecreaseTempo}" Gesture="Down" />
+    </Window.KeyBindings>
+
+    <Grid VerticalAlignment="Stretch" RowDefinitions="Auto,Auto,*,Auto">
         <StackPanel
             Height="50"
             Background="Crimson"
@@ -31,23 +39,25 @@
             <TextBlock Text="{Binding TempoScale}" />
             <Button Command="{Binding DecreaseTempo}">Dec</Button>
         </StackPanel>
-        <Panel Grid.Row="1">
-            <Panel.Background>
-                <SolidColorBrush Color="#FCF9EA" />
-            </Panel.Background>
+        <Panel Grid.Row="1" Height="20">
             <Slider
-                Height="100"
+                Height="20"
                 Margin="10,0,10,0"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Top"
                 Maximum="{Binding Duration}"
                 Value="{Binding Location}" />
+        </Panel>
+        <Panel Grid.Row="2">
+            <Panel.Background>
+                <SolidColorBrush Color="#FCF9EA" />
+            </Panel.Background>
             <ScrollViewer HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                 <controls:Sheet x:Name="sheet" />
             </ScrollViewer>
         </Panel>
         <Panel
-            Grid.Row="2"
+            Grid.Row="3"
             Height="155"
             Background="AliceBlue">
             <controls:PianoKeyboard x:Name="keyboard" />

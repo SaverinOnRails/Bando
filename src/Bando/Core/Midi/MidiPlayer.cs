@@ -200,6 +200,15 @@ public class MidiPlayer : IDisposable
 
     public void IncreaseTempoScale(double factor) => TempoScale += factor;
     public void DecreaseTempoScale(double factor) => TempoScale -= factor;
+
+    public void TogglePausePlay()
+    {
+        if (_paused)
+        {
+            Play();
+        }
+        else Pause();
+    }
 }
 
 public record Note

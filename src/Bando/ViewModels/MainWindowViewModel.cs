@@ -156,6 +156,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         TempoScale = Math.Round(_midiPlayer.TempoScale, 2);
     }
     public void Pause() => _midiPlayer.Pause();
+    public void TogglePausePlay() => _midiPlayer.TogglePausePlay();
     public void Play()
     {
         _midiPlayer.Play();
@@ -169,5 +170,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         }
     }
 
+    public void SeekForward()
+    {
+        var time = Location;
+        _midiPlayer.SeekTo(time + 1000);
+    }
+    public void SeekBackward()
+    {
+        var time = Location;
+        _midiPlayer.SeekTo(time - 1000);
+    }
     public string Greeting { get; } = "Welcome to Avalonia!";
 }
