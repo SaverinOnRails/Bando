@@ -31,13 +31,13 @@
             Background="Crimson"
             Orientation="Horizontal">
             <TextBlock Text="control center" />
-            <Button Command="{Binding SelectFile}">Select File</Button>
-            <Button Command="{Binding Start}">Start</Button>
-            <Button Command="{Binding Pause}">Pause</Button>
-            <Button Command="{Binding Play}">Play</Button>
-            <Button Command="{Binding IncreaseTempo}">Inc</Button>
+            <controls:Button Command="{Binding SelectFile}">Select File</controls:Button>
+            <controls:Button Command="{Binding Start}">Start</controls:Button>
+            <controls:Button Command="{Binding Pause}">Pause</controls:Button>
+            <controls:Button Command="{Binding Play}">Play</controls:Button>
+            <controls:Button Command="{Binding IncreaseTempo}">Inc</controls:Button>
             <TextBlock Text="{Binding TempoScale}" />
-            <Button Command="{Binding DecreaseTempo}">Dec</Button>
+            <controls:Button Command="{Binding DecreaseTempo}">Dec</controls:Button>
         </StackPanel>
         <Panel Grid.Row="1" Height="20">
             <Slider

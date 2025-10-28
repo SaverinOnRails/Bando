@@ -1,6 +1,7 @@
 <Styles
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:control="using:using:Bando.Controls"
     xmlns:r="using:Bando.Core.SheetMusic.Rendering">
     <Design.PreviewWith>
         <Border Padding="20">
@@ -18,11 +19,10 @@
         <Setter Property="Stroke" Value="Red" />
         <Setter Property="StrokeThickness" Value="2" />
         <!-- <Setter Property="Effect"> -->
-            <!-- <DropShadowEffect -->
-                <!-- BlurRadius="400" -->
-                <!-- Opacity="1" -->
-                <!-- Color="Red" /> -->
+        <!--  <DropShadowEffect  -->
+        <!--  BlurRadius="400"  -->
+        <!--  Opacity="1"  -->
+        <!--  Color="Red" />  -->
         <!-- </Setter> -->
     </Style>
-
 </Styles>

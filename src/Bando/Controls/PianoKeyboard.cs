@@ -59,7 +59,6 @@ public class PianoKeyboard : Panel
         _blackKeyCanvas.Children.Clear();
         var whiteKeys = _whiteKeyGrid.Children.OfType<WhitePianoKey>().ToList();
         double offset = 0;
-
         NoteName[] twoBlacksProgression = { NoteName.CSharp, NoteName.DSharp };
         NoteName[] threeBlacksProgression = { NoteName.FSharp, NoteName.GSharp, NoteName.ASharp };
         int octave = 0;

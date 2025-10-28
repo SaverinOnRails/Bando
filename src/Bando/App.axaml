@@ -2,6 +2,7 @@
     x:Class="Bando.App"
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Bando.Controls"
     xmlns:local="using:Bando"
     RequestedThemeVariant="Default">
     <!--  "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options.  -->
@@ -14,5 +15,10 @@
         <FluentTheme />
         <StyleInclude Source="avares://Bando/Styles/PianoKeyboard.axaml" />
         <StyleInclude Source="avares://Bando/Styles/Sheet.axaml" />
+
+        <Style Selector="controls|Button">
+            <Setter Property="Theme" Value="{StaticResource {x:Type Button}}" />
+        </Style>
     </Application.Styles>
+
 </Application>
